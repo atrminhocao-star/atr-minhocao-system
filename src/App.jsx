@@ -664,63 +664,57 @@ function ListaDespesas({ despesas, apagarDespesa, editarDespesa }) {
   return (
     <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
       <h2 className="text-2xl font-black mb-4">Abastecimentos e despesas cadastradas</h2>
-
-      {despesas.length === 0 ? (
-        <p className="text-zinc-400">Nenhum lançamento cadastrado ainda.</p>
-      ) : (
-        <div className="grid gap-4">
-          {despesas.map((d) => (
-            <div key={d.id} className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5">
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className="rounded-full bg-red-600 px-3 py-1 text-xs font-bold">{d.tipo}</span>
-                    <span className="rounded-full bg-zinc-800 px-3 py-1 text-xs">{d.statusPagamento}</span>
-                    <span className="rounded-full bg-zinc-800 px-3 py-1 text-xs">{d.formaPagamento}</span>
+      <div className="overflow-auto">
+        <table className="w-full min-w-[1250px] text-left text-sm border-separate border-spacing-y-3">
+          <thead className="text-zinc-400">
+            <tr>
+              <th className="px-4 pb-2">Data</th>
+              <th className="px-4 pb-2">Caminhão</th>
+              <th className="px-4 pb-2">Tipo</th>
+              <th className="px-4 pb-2">Posto/empresa</th>
+              <th className="px-4 pb-2">Litros</th>
+              <th className="px-4 pb-2">Valor/L</th>
+              <th className="px-4 pb-2">KM painel</th>
+              <th className="px-4 pb-2">Pagamento</th>
+              <th className="px-4 pb-2">Responsável</th>
+              <th className="px-4 pb-2">Vencimento</th>
+              <th className="px-4 pb-2">Total</th>
+              <th className="px-4 pb-2">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {despesas.map((d) => (
+              <tr key={d.id} className="bg-zinc-950">
+                <td className="px-4 py-4 rounded-l-2xl whitespace-nowrap">{formatarData(d.data)}</td>
+                <td className="px-4 py-4 font-bold whitespace-nowrap">{d.caminhao || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{d.tipo}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{d.postoEmpresa || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{d.litros ? `${numero(d.litros).toLocaleString("pt-BR")} L` : "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{d.valorLitro ? moeda(numero(d.valorLitro)) : "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{d.kmPainel || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{d.statusPagamento} / {d.formaPagamento}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{d.responsavelPagamento || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{formatarData(d.dataVencimento)}</td>
+                <td className="px-4 py-4 text-red-400 font-bold whitespace-nowrap">{moeda(d.valor)}</td>
+                <td className="px-4 py-4 rounded-r-2xl whitespace-nowrap">
+                  <div className="flex gap-3">
+                    <button onClick={() => editarDespesa(d)} className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 font-bold inline-flex items-center gap-2">
+                      <Pencil size={16} /> Editar
+                    </button>
+                    <button onClick={() => apagarDespesa(d.id)} className="bg-red-600 hover:bg-red-700 rounded-xl px-3 py-2 font-bold inline-flex items-center gap-2">
+                      <Trash2 size={16} /> Apagar
+                    </button>
                   </div>
-                  <h3 className="text-xl font-black">{d.caminhao || "Caminhão não informado"}</h3>
-                  <p className="text-zinc-400">{formatarData(d.data)} • {d.postoEmpresa || "Posto/empresa não informado"}</p>
-                </div>
-
-                <div className="text-left md:text-right">
-                  <p className="text-sm text-zinc-400">Total</p>
-                  <p className="text-2xl font-black text-red-400">{moeda(d.valor)}</p>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-4 gap-3 mt-5">
-                <Info label="Litros" value={d.litros ? `${numero(d.litros).toLocaleString("pt-BR")} L` : "-"} />
-                <Info label="Valor por litro" value={d.valorLitro ? moeda(d.valorLitro) : "-"} />
-                <Info label="KM painel" value={d.kmPainel || "-"} />
-                <Info label="Vencimento/previsão" value={formatarData(d.dataVencimento)} />
-                <Info label="Empresa/cliente responsável" value={d.responsavelPagamento || "-"} />
-                <Info label="Observação" value={d.descricao || "-"} />
-              </div>
-
-              <div className="flex gap-3 mt-5">
-                <button onClick={() => editarDespesa(d)} className="bg-zinc-800 hover:bg-zinc-700 rounded-2xl px-4 py-2 font-bold inline-flex items-center gap-2">
-                  <Pencil size={16} /> Editar
-                </button>
-                <button onClick={() => apagarDespesa(d.id)} className="bg-red-600 hover:bg-red-700 rounded-2xl px-4 py-2 font-bold inline-flex items-center gap-2">
-                  <Trash2 size={16} /> Apagar
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
 
-function Info({ label, value }) {
-  return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
-      <p className="text-xs text-zinc-500 mb-1">{label}</p>
-      <p className="font-bold break-words">{value}</p>
-    </div>
-  );
-}
 
 
 function ListaContas({ despesas, editarDespesa }) {
@@ -728,28 +722,34 @@ function ListaContas({ despesas, editarDespesa }) {
     <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
       <h2 className="text-2xl font-black mb-4">Contas a pagar por data</h2>
       <div className="overflow-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full min-w-[1050px] text-left text-sm border-separate border-spacing-y-3">
           <thead className="text-zinc-400">
             <tr>
-              <th className="pb-3">Vencimento</th>
-              <th className="pb-3">Data lançamento</th>
-              <th className="pb-3">Empresa/cliente a pagar</th>
-              <th className="pb-3">Caminhão</th>
-              <th className="pb-3">Tipo</th>
-              <th className="pb-3">Total</th>
-              <th></th>
+              <th className="px-4 pb-2">Vencimento</th>
+              <th className="px-4 pb-2">Data lançamento</th>
+              <th className="px-4 pb-2">Empresa/cliente a pagar</th>
+              <th className="px-4 pb-2">Caminhão</th>
+              <th className="px-4 pb-2">Tipo</th>
+              <th className="px-4 pb-2">Forma de pagamento</th>
+              <th className="px-4 pb-2">Total</th>
+              <th className="px-4 pb-2">Ações</th>
             </tr>
           </thead>
           <tbody>
             {despesas.map((d) => (
-              <tr key={d.id} className="border-t border-zinc-800">
-                <td className="py-4">{formatarData(d.dataVencimento)}</td>
-                <td>{formatarData(d.data)}</td>
-                <td>{d.responsavelPagamento || "-"}</td>
-                <td>{d.caminhao || "-"}</td>
-                <td>{d.tipo}</td>
-                <td className="text-red-400 font-bold">{moeda(d.valor)}</td>
-                <td><button onClick={() => editarDespesa(d)} className="text-zinc-200"><Pencil size={18} /></button></td>
+              <tr key={d.id} className="bg-zinc-950">
+                <td className="px-4 py-4 rounded-l-2xl whitespace-nowrap">{formatarData(d.dataVencimento)}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{formatarData(d.data)}</td>
+                <td className="px-4 py-4 font-bold whitespace-nowrap">{d.responsavelPagamento || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{d.caminhao || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{d.tipo}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{d.formaPagamento || "-"}</td>
+                <td className="px-4 py-4 text-red-400 font-bold whitespace-nowrap">{moeda(d.valor)}</td>
+                <td className="px-4 py-4 rounded-r-2xl whitespace-nowrap">
+                  <button onClick={() => editarDespesa(d)} className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 font-bold inline-flex items-center gap-2">
+                    <Pencil size={16} /> Editar
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
