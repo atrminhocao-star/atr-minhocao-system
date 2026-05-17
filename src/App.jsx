@@ -350,14 +350,27 @@ export default function App() {
 
   const selecionarMaterial = (nomeMaterial) => {
     const material = materiais.find((m) => m.nome === nomeMaterial);
-    const valorUnitario = material ? String(material.valor ?? material.valorUnitario ?? "") : viagemForm.valorUnitario;
 
-    setViagemForm({
-      ...viagemForm,
+    if (!material) {
+      setViagemForm({
+        ...viagemForm,
+        material: nomeMaterial,
+      });
+      return;
+    }
+
+    const valorUnitario = String(material.valor ?? material.valorUnitario ?? "");
+    const quantidade = viagemForm.quantidade;
+    const freteCalculado = calcularFrete(quantidade, valorUnitario);
+
+    setViagemForm((atual) => ({
+      ...atual,
       material: nomeMaterial,
+      origem: material.origem || "",
+      destino: material.destino || "",
       valorUnitario,
-      frete: calcularFrete(viagemForm.quantidade, valorUnitario),
-    });
+      frete: freteCalculado,
+    }));
   };
 
   const atualizarQuantidadeViagem = (quantidade) => {
