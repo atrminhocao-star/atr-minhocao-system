@@ -113,6 +113,7 @@ export default function App() {
     previsaoPagamento: "",
     status: "Programada",
   });
+  const [viagemEditandoId, setViagemEditandoId] = useState(null);
 
   const [filtroRecebimentos, setFiltroRecebimentos] = useState({
     inicio: "",
@@ -418,11 +419,7 @@ export default function App() {
     setMaterialForm({ nome: "", origem: "", destino: "", valor: "" });
   };
 
-  const adicionarViagem = () => {
-    if (!viagemForm.origem || !viagemForm.destino || !viagemForm.frete || !viagemForm.cliente) {
-      return alert("Informe cliente, origem, destino e frete.");
-    }
-    setViagens([...viagens, { id: crypto.randomUUID(), ...viagemForm }]);
+  const limparViagemForm = () => {
     setViagemForm({
       data: "",
       numeroPedido: "",
@@ -438,6 +435,49 @@ export default function App() {
       previsaoPagamento: "",
       status: "Programada",
     });
+  };
+
+  const salvarViagem = () => {
+    if (!viagemForm.origem || !viagemForm.destino || !viagemForm.frete || !viagemForm.cliente) {
+      return alert("Informe cliente, origem, destino e frete.");
+    }
+
+    if (viagemEditandoId) {
+      setViagens(viagens.map((v) =>
+        v.id === viagemEditandoId ? { ...v, ...viagemForm } : v
+      ));
+      setViagemEditandoId(null);
+    } else {
+      setViagens([...viagens, { id: crypto.randomUUID(), ...viagemForm }]);
+    }
+
+    limparViagemForm();
+  };
+
+  const editarViagem = (viagem) => {
+    setViagemEditandoId(viagem.id);
+    setViagemForm({
+      data: viagem.data || "",
+      numeroPedido: viagem.numeroPedido || "",
+      caminhao: viagem.caminhao || "",
+      origem: viagem.origem || "",
+      destino: viagem.destino || "",
+      material: viagem.material || "",
+      cliente: viagem.cliente || "",
+      quantidade: viagem.quantidade || "",
+      unidade: viagem.unidade || "Toneladas",
+      valorUnitario: viagem.valorUnitario || "",
+      frete: viagem.frete || "",
+      previsaoPagamento: viagem.previsaoPagamento || "",
+      status: viagem.status || "Programada",
+    });
+    setAba("viagens");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const cancelarEdicaoViagem = () => {
+    setViagemEditandoId(null);
+    limparViagemForm();
   };
 
   const salvarDespesa = () => {
@@ -607,7 +647,7 @@ export default function App() {
               </div>
             </section>
 
-            <ListaViagens viagens={viagensFiltradas} apagarViagem={(id) => setViagens(viagens.filter(v => v.id !== id))} />
+            <ListaViagens viagens={viagensFiltradas} apagarViagem={(id) => setViagens(viagens.filter(v => v.id !== id))} editarViagem={editarViagem} />
           </div>
         )}
 
@@ -767,7 +807,7 @@ export default function App() {
         {aba === "viagens" && (
           <div className="space-y-5">
             <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-              <h2 className="text-2xl font-black mb-4">Nova viagem</h2>
+              <h2 className="text-2xl font-black mb-4">{viagemEditandoId ? "Editar viagem" : "Nova viagem"}</h2>
               <p className="text-zinc-400 mb-4">O diesel fica apenas na aba de abastecimentos/despesas por caminhão. Ao selecionar o material, origem, destino e valor unitário são puxados automaticamente, mas podem ser ajustados se necessário.</p>
               <div className="grid md:grid-cols-4 gap-3">
                 <Input label="Data da viagem" type="date" value={viagemForm.data} onChange={(v) => setViagemForm({ ...viagemForm, data: v })} />
@@ -784,10 +824,10 @@ export default function App() {
                 <Input label="Previsão de pagamento" type="date" value={viagemForm.previsaoPagamento} onChange={(v) => setViagemForm({ ...viagemForm, previsaoPagamento: v })} />
                 <Select label="Status" value={viagemForm.status} onChange={(v) => setViagemForm({ ...viagemForm, status: v })} options={["Programada", "Em andamento", "Finalizada"]} />
               </div>
-              <button onClick={adicionarViagem} className="mt-4 bg-red-600 hover:bg-red-700 rounded-2xl px-6 py-3 font-bold flex items-center gap-2"><Save size={18} /> Salvar viagem</button>
+              <button onClick={salvarViagem} className="mt-4 bg-red-600 hover:bg-red-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2"><Save size={18} /> {viagemEditandoId ? "Salvar alterações" : "Salvar viagem"}</button>\n              {viagemEditandoId && <button onClick={cancelarEdicaoViagem} className="mt-4 ml-2 bg-zinc-800 hover:bg-zinc-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2"><X size={18} /> Cancelar edição</button>
             </section>
 
-            <ListaViagens viagens={viagens} apagarViagem={(id) => setViagens(viagens.filter(v => v.id !== id))} />
+            <ListaViagens viagens={viagens} apagarViagem={(id) => setViagens(viagens.filter(v => v.id !== id))} editarViagem={editarViagem} />
           </div>
         )}
 
@@ -813,7 +853,7 @@ export default function App() {
               <Card titulo="Clientes filtrados" valor={filtroRecebimentos.cliente || "Todos"} icone={Building2} />
             </div>
 
-            <ListaViagens viagens={fretesAReceber} apagarViagem={(id) => setViagens(viagens.filter(v => v.id !== id))} />
+            <ListaViagens viagens={fretesAReceber} apagarViagem={(id) => setViagens(viagens.filter(v => v.id !== id))} editarViagem={editarViagem} />
           </div>
         )}
 
@@ -961,7 +1001,7 @@ function Select({ label, value, onChange, options }) {
   );
 }
 
-function ListaViagens({ viagens, apagarViagem }) {
+function ListaViagens({ viagens, apagarViagem, editarViagem }) {
   return (
     <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
       <h2 className="text-2xl font-black mb-4">Viagens cadastradas</h2>
