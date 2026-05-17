@@ -87,6 +87,7 @@ export default function App() {
   const [viagens, setViagens] = useState([]);
   const [despesas, setDespesas] = useState([]);
   const [entradasCaixa, setEntradasCaixa] = useState([]);
+  const [saidasManuais, setSaidasManuais] = useState([]);
 
   const [loginForm, setLoginForm] = useState({ usuario: "", senha: "" });
   const [filtros, setFiltros] = useState({ cliente: "", caminhao: "" });
@@ -140,6 +141,15 @@ export default function App() {
     origem: "Manual",
   });
 
+  const [saidaForm, setSaidaForm] = useState({
+    data: "",
+    valor: "",
+    descricao: "",
+    cliente: "",
+    caminhao: "",
+    origem: "Manual",
+  });
+
   const [despesaForm, setDespesaForm] = useState(despesaVazia);
   const [despesaEditandoId, setDespesaEditandoId] = useState(null);
 
@@ -172,6 +182,7 @@ export default function App() {
         formaPagamento: normalizarFormaPagamento(d.formaPagamento),
       })));
       setEntradasCaixa(dadosEncontrados.entradasCaixa || []);
+      setSaidasManuais(dadosEncontrados.saidasManuais || []);
     } else {
       setUsuarios(dadosIniciais.usuarios);
       setClientes(dadosIniciais.clientes);
@@ -183,16 +194,17 @@ export default function App() {
         formaPagamento: normalizarFormaPagamento(d.formaPagamento),
       })));
       setEntradasCaixa([]);
+      setSaidasManuais([]);
     }
 
     if (sessao) setLogado(JSON.parse(sessao));
   }, []);
 
   useEffect(() => {
-    const dados = { usuarios, clientes, materiais, caminhoes, viagens, despesas, entradasCaixa };
+    const dados = { usuarios, clientes, materiais, caminhoes, viagens, despesas, entradasCaixa, saidasManuais };
     localStorage.setItem(CHAVE_PRINCIPAL, JSON.stringify(dados));
     localStorage.setItem("atr-minhocao-v4", JSON.stringify(dados));
-  }, [usuarios, clientes, materiais, caminhoes, viagens, despesas, entradasCaixa]);
+  }, [usuarios, clientes, materiais, caminhoes, viagens, despesas, entradasCaixa, saidasManuais]);
 
   const viagensFiltradas = useMemo(() => {
     return viagens.filter((v) => {
@@ -342,7 +354,7 @@ export default function App() {
   };
 
   const saidasCaixa = useMemo(() => {
-    return despesas.map((d) => ({
+    const saidasDasDespesas = despesas.map((d) => ({
       id: d.id,
       data: d.dataPagamento || d.data || d.dataVencimento || "",
       valor: numero(d.valor),
@@ -352,7 +364,16 @@ export default function App() {
       tipo: "Saída",
       origem: "Despesa",
     }));
-  }, [despesas]);
+
+    const saidasLancadas = saidasManuais.map((s) => ({
+      ...s,
+      valor: numero(s.valor),
+      tipo: "Saída",
+      origem: s.origem || "Manual",
+    }));
+
+    return [...saidasDasDespesas, ...saidasLancadas];
+  }, [despesas, saidasManuais]);
 
   const fluxoCaixa = useMemo(() => {
     const entradas = entradasCaixa.map((e) => ({
@@ -390,6 +411,30 @@ export default function App() {
     ]);
 
     setEntradaForm({
+      data: "",
+      valor: "",
+      descricao: "",
+      cliente: "",
+      caminhao: "",
+      origem: "Manual",
+    });
+  };
+
+  const salvarSaidaCaixa = () => {
+    if (!saidaForm.data || !saidaForm.valor) {
+      return alert("Informe data e valor da saída.");
+    }
+
+    setSaidasManuais([
+      ...saidasManuais,
+      {
+        id: crypto.randomUUID(),
+        ...saidaForm,
+        valor: numero(saidaForm.valor),
+      },
+    ]);
+
+    setSaidaForm({
       data: "",
       valor: "",
       descricao: "",
@@ -503,7 +548,33 @@ export default function App() {
     }
 
     if (clienteEditandoId) {
-      setClientes(clientes.map((c) => c.id === clienteEditandoId ? { ...c, ...clienteForm } : c));
+      const clienteAntigo = clientes.find((c) => c.id === clienteEditandoId);
+      const nomeAntigo = clienteAntigo?.nome;
+      const nomeNovo = clienteForm.nome;
+
+      setClientes(clientes.map((c) =>
+        c.id === clienteEditandoId ? { ...c, ...clienteForm } : c
+      ));
+
+      if (nomeAntigo && nomeAntigo !== nomeNovo) {
+        setViagens(viagens.map((v) =>
+          v.cliente === nomeAntigo ? { ...v, cliente: nomeNovo } : v
+        ));
+
+        setDespesas(despesas.map((d) => ({
+          ...d,
+          responsavelPagamento: d.responsavelPagamento === nomeAntigo ? nomeNovo : d.responsavelPagamento,
+        })));
+
+        setEntradasCaixa(entradasCaixa.map((e) =>
+          e.cliente === nomeAntigo ? { ...e, cliente: nomeNovo } : e
+        ));
+
+        setSaidasManuais(saidasManuais.map((s) =>
+          s.cliente === nomeAntigo ? { ...s, cliente: nomeNovo } : s
+        ));
+      }
+
       setClienteEditandoId(null);
     } else {
       setClientes([...clientes, { id: crypto.randomUUID(), ...clienteForm }]);
@@ -712,6 +783,17 @@ export default function App() {
     limparViagemForm();
   };
 
+  const apagarViagemComConfirmacao = (id) => {
+    const viagem = viagens.find((v) => v.id === id);
+    const identificacao = viagem?.numeroPedido ? `pedido ${viagem.numeroPedido}` : "esta viagem/frete";
+
+    if (!window.confirm(`Tem certeza que deseja excluir ${identificacao}? Essa ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    setViagens(viagens.filter((v) => v.id !== id));
+  };
+
   const salvarDespesa = () => {
     if (!despesaForm.data || !despesaForm.caminhao || !despesaForm.tipo) return alert("Informe data, caminhão e tipo da despesa.");
 
@@ -881,7 +963,7 @@ export default function App() {
               </div>
             </section>
 
-            <ListaViagens viagens={viagensFiltradas} apagarViagem={(id) => setViagens(viagens.filter(v => v.id !== id))} editarViagem={editarViagem} />
+            <ListaViagens viagens={viagensFiltradas} apagarViagem={apagarViagemComConfirmacao} editarViagem={editarViagem} />
           </div>
         )}
 
@@ -1070,7 +1152,7 @@ export default function App() {
               </div>
             </section>
 
-            <ListaViagens viagens={viagens} apagarViagem={(id) => setViagens(viagens.filter(v => v.id !== id))} editarViagem={editarViagem} />
+            <ListaViagens viagens={viagens} apagarViagem={apagarViagemComConfirmacao} editarViagem={editarViagem} />
           </div>
         )}
 
@@ -1096,7 +1178,7 @@ export default function App() {
               <Card titulo="Clientes filtrados" valor={filtroRecebimentos.cliente || "Todos"} icone={Building2} />
             </div>
 
-            <ListaViagens viagens={fretesAReceber} apagarViagem={(id) => setViagens(viagens.filter(v => v.id !== id))} editarViagem={editarViagem} marcarFretePago={marcarFretePago} />
+            <ListaViagens viagens={fretesAReceber} apagarViagem={apagarViagemComConfirmacao} editarViagem={editarViagem} marcarFretePago={marcarFretePago} />
           </div>
         )}
 
@@ -1137,7 +1219,7 @@ export default function App() {
               <Card titulo="Relatório" valor="PDF" icone={Filter} />
             </div>
 
-            <ListaViagens viagens={viagensRelatorio} apagarViagem={(id) => setViagens(viagens.filter(v => v.id !== id))} editarViagem={editarViagem} />
+            <ListaViagens viagens={viagensRelatorio} apagarViagem={apagarViagemComConfirmacao} editarViagem={editarViagem} />
           </div>
         )}
 
@@ -1150,21 +1232,37 @@ export default function App() {
               <Card titulo="Saldo" valor={moeda(resumoFluxo.saldo)} icone={CalendarDays} destaque />
             </div>
 
-            <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-              <h2 className="text-2xl font-black mb-4">Nova entrada de caixa</h2>
-              <div className="grid md:grid-cols-4 gap-3">
-                <Input label="Data da entrada" type="date" value={entradaForm.data} onChange={(v) => setEntradaForm({ ...entradaForm, data: v })} />
-                <Input label="Valor R$" value={entradaForm.valor} onChange={(v) => setEntradaForm({ ...entradaForm, valor: v })} />
-                <Select label="Cliente/empresa" value={entradaForm.cliente} onChange={(v) => setEntradaForm({ ...entradaForm, cliente: v })} options={clientes.map(c => c.nome)} />
-                <Select label="Caminhão" value={entradaForm.caminhao} onChange={(v) => setEntradaForm({ ...entradaForm, caminhao: v })} options={caminhoes.map(c => c.placa)} />
-                <Input label="Descrição" value={entradaForm.descricao} onChange={(v) => setEntradaForm({ ...entradaForm, descricao: v })} />
-              </div>
-              <button onClick={salvarEntradaCaixa} className="mt-4 bg-red-600 hover:bg-red-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2">
-                <Save size={18} /> Salvar entrada
-              </button>
-            </section>
+            <div className="grid md:grid-cols-2 gap-5">
+              <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+                <h2 className="text-2xl font-black mb-4">Nova entrada de caixa</h2>
+                <div className="grid gap-3">
+                  <Input label="Data da entrada" type="date" value={entradaForm.data} onChange={(v) => setEntradaForm({ ...entradaForm, data: v })} />
+                  <Input label="Valor R$" value={entradaForm.valor} onChange={(v) => setEntradaForm({ ...entradaForm, valor: v })} />
+                  <Select label="Cliente/empresa" value={entradaForm.cliente} onChange={(v) => setEntradaForm({ ...entradaForm, cliente: v })} options={clientes.map(c => c.nome)} />
+                  <Select label="Caminhão" value={entradaForm.caminhao} onChange={(v) => setEntradaForm({ ...entradaForm, caminhao: v })} options={caminhoes.map(c => c.placa)} />
+                  <Input label="Descrição" value={entradaForm.descricao} onChange={(v) => setEntradaForm({ ...entradaForm, descricao: v })} />
+                </div>
+                <button onClick={salvarEntradaCaixa} className="mt-4 bg-green-700 hover:bg-green-800 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2">
+                  <Save size={18} /> Salvar entrada
+                </button>
+              </section>
 
-            <ListaFluxoCaixa fluxo={fluxoCaixa} apagarEntrada={(id) => setEntradasCaixa(entradasCaixa.filter(e => e.id !== id))} />
+              <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+                <h2 className="text-2xl font-black mb-4">Nova saída de caixa</h2>
+                <div className="grid gap-3">
+                  <Input label="Data da saída" type="date" value={saidaForm.data} onChange={(v) => setSaidaForm({ ...saidaForm, data: v })} />
+                  <Input label="Valor R$" value={saidaForm.valor} onChange={(v) => setSaidaForm({ ...saidaForm, valor: v })} />
+                  <Select label="Empresa/responsável" value={saidaForm.cliente} onChange={(v) => setSaidaForm({ ...saidaForm, cliente: v })} options={clientes.map(c => c.nome)} />
+                  <Select label="Caminhão" value={saidaForm.caminhao} onChange={(v) => setSaidaForm({ ...saidaForm, caminhao: v })} options={caminhoes.map(c => c.placa)} />
+                  <Input label="Descrição/observação" value={saidaForm.descricao} onChange={(v) => setSaidaForm({ ...saidaForm, descricao: v })} />
+                </div>
+                <button onClick={salvarSaidaCaixa} className="mt-4 bg-red-600 hover:bg-red-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2">
+                  <Save size={18} /> Salvar saída
+                </button>
+              </section>
+            </div>
+
+            <ListaFluxoCaixa fluxo={fluxoCaixa} apagarEntrada={(id) => setEntradasCaixa(entradasCaixa.filter(e => e.id !== id))} apagarSaida={(id) => setSaidasManuais(saidasManuais.filter(s => s.id !== id))} />
           </div>
         )}
 
@@ -1314,7 +1412,7 @@ function Select({ label, value, onChange, options }) {
 
 
 
-function ListaFluxoCaixa({ fluxo, apagarEntrada }) {
+function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida }) {
   return (
     <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
       <h2 className="text-2xl font-black mb-4">Movimentações do fluxo de caixa</h2>
@@ -1349,8 +1447,11 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada }) {
                 <td className="px-4 py-4">{item.descricao || "-"}</td>
                 <td className="px-4 py-4 whitespace-nowrap">{item.origem || "-"}</td>
                 <td className="px-4 py-4 rounded-r-2xl whitespace-nowrap">
-                  {item.tipo === "Entrada" && item.origem === "Manual" ? (
-                    <button onClick={() => apagarEntrada(item.id)} className="bg-red-600 hover:bg-red-700 rounded-xl px-3 py-2 font-bold">
+                  {item.origem === "Manual" ? (
+                    <button
+                      onClick={() => item.tipo === "Entrada" ? apagarEntrada(item.id) : apagarSaida(item.id)}
+                      className="bg-red-600 hover:bg-red-700 rounded-xl px-3 py-2 font-bold"
+                    >
                       Apagar
                     </button>
                   ) : "-"}
