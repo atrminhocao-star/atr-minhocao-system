@@ -30,6 +30,30 @@ const normalizarFormaPagamento = (forma) => {
   return forma || "-";
 };
 
+const normalizarTexto = (texto) =>
+  String(texto || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+
+const formatarValorDigitado = (valor) => {
+  const digitos = String(valor || "").replace(/\D/g, "");
+  if (!digitos) return "";
+  const numeroFinal = Number(digitos) / 100;
+  return numeroFinal.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
+const somarMeses = (dataISO, meses) => {
+  if (!dataISO) return "";
+  const [ano, mes, dia] = dataISO.split("-").map(Number);
+  const data = new Date(ano, mes - 1 + meses, dia);
+  return data.toISOString().slice(0, 10);
+};
+
 const hojeISO = () => new Date().toISOString().slice(0, 10);
 
 const statusConta = (despesa) => {
@@ -88,6 +112,7 @@ export default function App() {
   const [despesas, setDespesas] = useState([]);
   const [entradasCaixa, setEntradasCaixa] = useState([]);
   const [saidasManuais, setSaidasManuais] = useState([]);
+  const [contasReceberFixas, setContasReceberFixas] = useState([]);
 
   const [loginForm, setLoginForm] = useState({ usuario: "", senha: "" });
   const [filtros, setFiltros] = useState({ cliente: "", caminhao: "" });
@@ -150,6 +175,14 @@ export default function App() {
     origem: "Manual",
   });
 
+  const [contaReceberForm, setContaReceberForm] = useState({
+    cliente: "",
+    descricao: "",
+    valorParcela: "",
+    quantidadeParcelas: "",
+    dataPrimeiraParcela: "",
+  });
+
   const [despesaForm, setDespesaForm] = useState(despesaVazia);
   const [despesaEditandoId, setDespesaEditandoId] = useState(null);
 
@@ -183,6 +216,7 @@ export default function App() {
       })));
       setEntradasCaixa(dadosEncontrados.entradasCaixa || []);
       setSaidasManuais(dadosEncontrados.saidasManuais || []);
+      setContasReceberFixas(dadosEncontrados.contasReceberFixas || []);
     } else {
       setUsuarios(dadosIniciais.usuarios);
       setClientes(dadosIniciais.clientes);
@@ -195,16 +229,73 @@ export default function App() {
       })));
       setEntradasCaixa([]);
       setSaidasManuais([]);
+      setContasReceberFixas([]);
     }
 
     if (sessao) setLogado(JSON.parse(sessao));
   }, []);
 
+
   useEffect(() => {
-    const dados = { usuarios, clientes, materiais, caminhoes, viagens, despesas, entradasCaixa, saidasManuais };
+    if (!clientes.length) return;
+
+    const encontrarNomePadrao = (nomeAtual) => {
+      const atualNorm = normalizarTexto(nomeAtual);
+      if (!atualNorm) return nomeAtual;
+
+      const exato = clientes.find((c) => normalizarTexto(c.nome) === atualNorm);
+      if (exato) return exato.nome;
+
+      const parecido = clientes.find((c) => {
+        const clienteNorm = normalizarTexto(c.nome);
+        if (clienteNorm.length < 3) return false;
+        return atualNorm.includes(clienteNorm) || clienteNorm.includes(atualNorm);
+      });
+
+      return parecido ? parecido.nome : nomeAtual;
+    };
+
+    setViagens((lista) =>
+      lista.map((v) => ({
+        ...v,
+        cliente: encontrarNomePadrao(v.cliente),
+      }))
+    );
+
+    setDespesas((lista) =>
+      lista.map((d) => ({
+        ...d,
+        responsavelPagamento: encontrarNomePadrao(d.responsavelPagamento),
+      }))
+    );
+
+    setEntradasCaixa((lista) =>
+      lista.map((e) => ({
+        ...e,
+        cliente: encontrarNomePadrao(e.cliente),
+      }))
+    );
+
+    setSaidasManuais((lista) =>
+      lista.map((s) => ({
+        ...s,
+        cliente: encontrarNomePadrao(s.cliente),
+      }))
+    );
+
+    setContasReceberFixas((lista) =>
+      lista.map((c) => ({
+        ...c,
+        cliente: encontrarNomePadrao(c.cliente),
+      }))
+    );
+  }, [clientes.length]);
+
+  useEffect(() => {
+    const dados = { usuarios, clientes, materiais, caminhoes, viagens, despesas, entradasCaixa, saidasManuais, contasReceberFixas };
     localStorage.setItem(CHAVE_PRINCIPAL, JSON.stringify(dados));
     localStorage.setItem("atr-minhocao-v4", JSON.stringify(dados));
-  }, [usuarios, clientes, materiais, caminhoes, viagens, despesas, entradasCaixa, saidasManuais]);
+  }, [usuarios, clientes, materiais, caminhoes, viagens, despesas, entradasCaixa, saidasManuais, contasReceberFixas]);
 
   const viagensFiltradas = useMemo(() => {
     return viagens.filter((v) => {
@@ -473,6 +564,76 @@ export default function App() {
     }
   };
 
+  const resumoContasReceber = useMemo(() => {
+    const abertas = contasReceberFixas.filter((c) => c.status !== "Pago");
+    const pagas = contasReceberFixas.filter((c) => c.status === "Pago");
+    return {
+      abertas: abertas.length,
+      pagas: pagas.length,
+      valorAberto: abertas.reduce((s, c) => s + numero(c.valor), 0),
+      valorPago: pagas.reduce((s, c) => s + numero(c.valor), 0),
+    };
+  }, [contasReceberFixas]);
+
+  const salvarContaReceberFixa = () => {
+    if (!contaReceberForm.cliente || !contaReceberForm.valorParcela || !contaReceberForm.quantidadeParcelas || !contaReceberForm.dataPrimeiraParcela) {
+      return alert("Informe cliente, valor, quantidade de parcelas e data da primeira parcela.");
+    }
+
+    const quantidade = Number(contaReceberForm.quantidadeParcelas || 0);
+    const novasParcelas = [];
+
+    for (let i = 0; i < quantidade; i++) {
+      novasParcelas.push({
+        id: crypto.randomUUID(),
+        grupoId: crypto.randomUUID(),
+        cliente: contaReceberForm.cliente,
+        descricao: contaReceberForm.descricao || "Conta fixa a receber",
+        valor: numero(contaReceberForm.valorParcela),
+        parcela: i + 1,
+        totalParcelas: quantidade,
+        dataVencimento: somarMeses(contaReceberForm.dataPrimeiraParcela, i),
+        status: "Em aberto",
+        dataPagamento: "",
+      });
+    }
+
+    setContasReceberFixas([...contasReceberFixas, ...novasParcelas]);
+    setContaReceberForm({
+      cliente: "",
+      descricao: "",
+      valorParcela: "",
+      quantidadeParcelas: "",
+      dataPrimeiraParcela: "",
+    });
+  };
+
+  const marcarContaReceberPaga = (conta) => {
+    const dataPagamento = prompt("Informe a data de pagamento no formato AAAA-MM-DD:", hojeISO());
+    if (!dataPagamento) return;
+
+    setContasReceberFixas(contasReceberFixas.map((c) =>
+      c.id === conta.id ? { ...c, status: "Pago", dataPagamento } : c
+    ));
+
+    const entradaExistente = entradasCaixa.some((e) => e.contaReceberId === conta.id);
+    if (!entradaExistente) {
+      setEntradasCaixa([
+        ...entradasCaixa,
+        {
+          id: crypto.randomUUID(),
+          contaReceberId: conta.id,
+          data: dataPagamento,
+          valor: numero(conta.valor),
+          descricao: `${conta.descricao} - Parcela ${conta.parcela}/${conta.totalParcelas}`,
+          cliente: conta.cliente,
+          caminhao: "",
+          origem: "Conta fixa a receber",
+        },
+      ]);
+    }
+  };
+
   const contasAPagar = useMemo(() => {
     return despesas
       .filter((d) => d.statusPagamento === "A prazo" || d.statusPagamento === "Pendente" || d.statusPagamento === "Pago" || d.dataVencimento || d.dataPagamento)
@@ -572,6 +733,10 @@ export default function App() {
 
         setSaidasManuais(saidasManuais.map((s) =>
           s.cliente === nomeAntigo ? { ...s, cliente: nomeNovo } : s
+        ));
+
+        setContasReceberFixas(contasReceberFixas.map((c) =>
+          c.cliente === nomeAntigo ? { ...c, cliente: nomeNovo } : c
         ));
       }
 
@@ -876,6 +1041,7 @@ export default function App() {
     { id: "recebimentos", nome: "Fretes a receber" },
     { id: "relatorios", nome: "Relatórios" },
     { id: "fluxo", nome: "Fluxo de caixa" },
+    { id: "receberfixo", nome: "Contas fixas a receber" },
     { id: "despesas", nome: "Abastecimentos/Despesas" },
     { id: "contas", nome: "Contas a pagar" },
     { id: "usuarios", nome: "Usuários" },
@@ -1030,7 +1196,7 @@ export default function App() {
               <Input
                 label="Valor unitário padrão R$"
                 value={materialForm.valor}
-                onChange={(v) => setMaterialForm({ ...materialForm, valor: v })}
+                onChange={(v) => setMaterialForm({ ...materialForm, valor: formatarValorDigitado(v) })}
               />
 
               <button
@@ -1135,8 +1301,8 @@ export default function App() {
                 <Input label="Destino" value={viagemForm.destino} onChange={(v) => setViagemForm({ ...viagemForm, destino: v })} />
                 <Input label="Quantidade" value={viagemForm.quantidade} onChange={atualizarQuantidadeViagem} />
                 <Select label="Unidade" value={viagemForm.unidade} onChange={(v) => setViagemForm({ ...viagemForm, unidade: v })} options={["Toneladas", "Quilos", "Viagem", "Carga", "Outro"]} />
-                <Input label="Valor unitário R$" value={viagemForm.valorUnitario} onChange={atualizarValorUnitarioViagem} />
-                <Input label="Frete total a receber R$" value={viagemForm.frete} onChange={(v) => setViagemForm({ ...viagemForm, frete: v })} />
+                <Input label="Valor unitário R$" value={viagemForm.valorUnitario} onChange={(v) => atualizarValorUnitarioViagem(formatarValorDigitado(v))} />
+                <Input label="Frete total a receber R$" value={viagemForm.frete} onChange={(v) => setViagemForm({ ...viagemForm, frete: formatarValorDigitado(v) })} />
                 <Input label="Previsão de pagamento" type="date" value={viagemForm.previsaoPagamento} onChange={(v) => setViagemForm({ ...viagemForm, previsaoPagamento: v })} />
                 <Select label="Status" value={viagemForm.status} onChange={(v) => setViagemForm({ ...viagemForm, status: v })} options={["Programada", "Em andamento", "Finalizada"]} />
               </div>
@@ -1237,7 +1403,7 @@ export default function App() {
                 <h2 className="text-2xl font-black mb-4">Nova entrada de caixa</h2>
                 <div className="grid gap-3">
                   <Input label="Data da entrada" type="date" value={entradaForm.data} onChange={(v) => setEntradaForm({ ...entradaForm, data: v })} />
-                  <Input label="Valor R$" value={entradaForm.valor} onChange={(v) => setEntradaForm({ ...entradaForm, valor: v })} />
+                  <Input label="Valor R$" value={entradaForm.valor} onChange={(v) => setEntradaForm({ ...entradaForm, valor: formatarValorDigitado(v) })} />
                   <Select label="Cliente/empresa" value={entradaForm.cliente} onChange={(v) => setEntradaForm({ ...entradaForm, cliente: v })} options={clientes.map(c => c.nome)} />
                   <Select label="Caminhão" value={entradaForm.caminhao} onChange={(v) => setEntradaForm({ ...entradaForm, caminhao: v })} options={caminhoes.map(c => c.placa)} />
                   <Input label="Descrição" value={entradaForm.descricao} onChange={(v) => setEntradaForm({ ...entradaForm, descricao: v })} />
@@ -1251,7 +1417,7 @@ export default function App() {
                 <h2 className="text-2xl font-black mb-4">Nova saída de caixa</h2>
                 <div className="grid gap-3">
                   <Input label="Data da saída" type="date" value={saidaForm.data} onChange={(v) => setSaidaForm({ ...saidaForm, data: v })} />
-                  <Input label="Valor R$" value={saidaForm.valor} onChange={(v) => setSaidaForm({ ...saidaForm, valor: v })} />
+                  <Input label="Valor R$" value={saidaForm.valor} onChange={(v) => setSaidaForm({ ...saidaForm, valor: formatarValorDigitado(v) })} />
                   <Select label="Empresa/responsável" value={saidaForm.cliente} onChange={(v) => setSaidaForm({ ...saidaForm, cliente: v })} options={clientes.map(c => c.nome)} />
                   <Select label="Caminhão" value={saidaForm.caminhao} onChange={(v) => setSaidaForm({ ...saidaForm, caminhao: v })} options={caminhoes.map(c => c.placa)} />
                   <Input label="Descrição/observação" value={saidaForm.descricao} onChange={(v) => setSaidaForm({ ...saidaForm, descricao: v })} />
@@ -1263,6 +1429,35 @@ export default function App() {
             </div>
 
             <ListaFluxoCaixa fluxo={fluxoCaixa} apagarEntrada={(id) => setEntradasCaixa(entradasCaixa.filter(e => e.id !== id))} apagarSaida={(id) => setSaidasManuais(saidasManuais.filter(s => s.id !== id))} />
+          </div>
+        )}
+
+
+        {aba === "receberfixo" && (
+          <div className="space-y-5">
+            <div className="grid md:grid-cols-4 gap-4">
+              <Card titulo="Parcelas em aberto" valor={resumoContasReceber.abertas} icone={CalendarDays} />
+              <Card titulo="Valor em aberto" valor={moeda(resumoContasReceber.valorAberto)} icone={Wallet} destaque />
+              <Card titulo="Parcelas pagas" valor={resumoContasReceber.pagas} icone={Save} />
+              <Card titulo="Valor recebido" valor={moeda(resumoContasReceber.valorPago)} icone={Wallet} />
+            </div>
+
+            <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+              <h2 className="text-2xl font-black mb-4">Nova conta fixa a receber</h2>
+              <p className="text-zinc-400 mb-4">Exemplo: receber R$ 1.000,00 durante 10 meses. O sistema cria as parcelas automaticamente.</p>
+              <div className="grid md:grid-cols-4 gap-3">
+                <Select label="Cliente/empresa" value={contaReceberForm.cliente} onChange={(v) => setContaReceberForm({ ...contaReceberForm, cliente: v })} options={clientes.map(c => c.nome)} />
+                <Input label="Descrição" value={contaReceberForm.descricao} onChange={(v) => setContaReceberForm({ ...contaReceberForm, descricao: v })} />
+                <Input label="Valor de cada parcela R$" value={contaReceberForm.valorParcela} onChange={(v) => setContaReceberForm({ ...contaReceberForm, valorParcela: formatarValorDigitado(v) })} />
+                <Input label="Quantidade de parcelas/meses" value={contaReceberForm.quantidadeParcelas} onChange={(v) => setContaReceberForm({ ...contaReceberForm, quantidadeParcelas: v.replace(/\\D/g, "") })} />
+                <Input label="Data da primeira parcela" type="date" value={contaReceberForm.dataPrimeiraParcela} onChange={(v) => setContaReceberForm({ ...contaReceberForm, dataPrimeiraParcela: v })} />
+              </div>
+              <button onClick={salvarContaReceberFixa} className="mt-4 bg-red-600 hover:bg-red-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2">
+                <Save size={18} /> Criar parcelas
+              </button>
+            </section>
+
+            <ListaContasReceberFixas contas={contasReceberFixas} marcarPago={marcarContaReceberPaga} apagarConta={(id) => setContasReceberFixas(contasReceberFixas.filter(c => c.id !== id))} />
           </div>
         )}
 
@@ -1281,7 +1476,7 @@ export default function App() {
                 {despesaForm.tipo === "Combustível" ? (
                   <>
                     <Input label="Quantidade de litros" value={despesaForm.litros} onChange={(v) => setDespesaForm({ ...despesaForm, litros: v })} icon={Droplets} />
-                    <Input label="Valor por litro R$" value={despesaForm.valorLitro} onChange={(v) => setDespesaForm({ ...despesaForm, valorLitro: v })} />
+                    <Input label="Valor por litro R$" value={despesaForm.valorLitro} onChange={(v) => setDespesaForm({ ...despesaForm, valorLitro: formatarValorDigitado(v) })} />
                     <Input label="KM no painel" value={despesaForm.kmPainel} onChange={(v) => setDespesaForm({ ...despesaForm, kmPainel: v })} icon={Gauge} />
                     <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3">
                       <p className="text-sm text-zinc-400">Total calculado</p>
@@ -1289,7 +1484,7 @@ export default function App() {
                     </div>
                   </>
                 ) : (
-                  <Input label="Valor R$" value={despesaForm.valor} onChange={(v) => setDespesaForm({ ...despesaForm, valor: v })} />
+                  <Input label="Valor R$" value={despesaForm.valor} onChange={(v) => setDespesaForm({ ...despesaForm, valor: formatarValorDigitado(v) })} />
                 )}
 
                 <Select label="Status do pagamento" value={despesaForm.statusPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, statusPagamento: v })} options={["Pago", "A prazo", "Pendente"]} />
@@ -1411,6 +1606,68 @@ function Select({ label, value, onChange, options }) {
 }
 
 
+
+
+function ListaContasReceberFixas({ contas, marcarPago, apagarConta }) {
+  const contasOrdenadas = [...contas].sort((a, b) =>
+    String(a.dataVencimento || "").localeCompare(String(b.dataVencimento || ""))
+  );
+
+  return (
+    <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+      <h2 className="text-2xl font-black mb-4">Parcelas cadastradas a receber</h2>
+      <div className="overflow-auto">
+        <table className="w-full min-w-[1000px] text-left text-sm border-separate border-spacing-y-3">
+          <thead className="text-zinc-400">
+            <tr>
+              <th className="px-4 pb-2">Vencimento</th>
+              <th className="px-4 pb-2">Cliente</th>
+              <th className="px-4 pb-2">Descrição</th>
+              <th className="px-4 pb-2">Parcela</th>
+              <th className="px-4 pb-2">Valor</th>
+              <th className="px-4 pb-2">Status</th>
+              <th className="px-4 pb-2">Data pagamento</th>
+              <th className="px-4 pb-2">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {contasOrdenadas.map((c) => (
+              <tr key={c.id} className="bg-zinc-950">
+                <td className="px-4 py-4 rounded-l-2xl whitespace-nowrap">{formatarData(c.dataVencimento)}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{c.cliente || "-"}</td>
+                <td className="px-4 py-4">{c.descricao || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{c.parcela}/{c.totalParcelas}</td>
+                <td className="px-4 py-4 text-green-400 font-bold whitespace-nowrap">{moeda(c.valor)}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{c.status}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{formatarData(c.dataPagamento)}</td>
+                <td className="px-4 py-4 rounded-r-2xl whitespace-nowrap">
+                  <div className="flex gap-2">
+                    {c.status !== "Pago" && (
+                      <button onClick={() => marcarPago(c)} className="bg-green-700 hover:bg-green-800 rounded-xl px-3 py-2 font-bold">
+                        Marcar pago
+                      </button>
+                    )}
+                    <button onClick={() => apagarConta(c.id)} className="bg-red-600 hover:bg-red-700 rounded-xl px-3 py-2 font-bold">
+                      Apagar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+
+            {contasOrdenadas.length === 0 && (
+              <tr>
+                <td colSpan="8" className="px-4 py-6 text-zinc-400">
+                  Nenhuma conta fixa a receber cadastrada.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
 
 function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida }) {
   return (
