@@ -90,6 +90,7 @@ export default function App() {
     caminhao: "",
     origem: "",
     destino: "",
+    material: "",
     cliente: "",
     quantidade: "",
     unidade: "Toneladas",
@@ -295,6 +296,7 @@ export default function App() {
       caminhao: "",
       origem: "",
       destino: "",
+      material: "",
       cliente: "",
       quantidade: "",
       unidade: "Toneladas",
@@ -549,6 +551,7 @@ export default function App() {
                 <Select label="Caminhão" value={viagemForm.caminhao} onChange={(v) => setViagemForm({ ...viagemForm, caminhao: v })} options={caminhoes.map(c => c.placa)} />
                 <Input label="Origem" value={viagemForm.origem} onChange={(v) => setViagemForm({ ...viagemForm, origem: v })} />
                 <Input label="Destino" value={viagemForm.destino} onChange={(v) => setViagemForm({ ...viagemForm, destino: v })} />
+                <Input label="Material" value={viagemForm.material} onChange={(v) => setViagemForm({ ...viagemForm, material: v })} />
                 <Input label="Quantidade" value={viagemForm.quantidade} onChange={(v) => setViagemForm({ ...viagemForm, quantidade: v })} />
                 <Select label="Unidade" value={viagemForm.unidade} onChange={(v) => setViagemForm({ ...viagemForm, unidade: v })} options={["Toneladas", "Quilos", "Viagem", "Carga", "Outro"]} />
                 <Input label="Valor unitário R$" value={viagemForm.valorUnitario} onChange={(v) => setViagemForm({ ...viagemForm, valorUnitario: v })} />
