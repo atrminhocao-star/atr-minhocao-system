@@ -244,12 +244,9 @@ export default function App() {
       valorFinal = numero(despesaForm.litros) * numero(despesaForm.valorLitro);
     }
 
-    if (despesaForm.statusPagamento === "A prazo" || despesaForm.formaPagamento === "A prazo" || despesaForm.formaPagamento === "Desconto por empresa") {
+    if (despesaForm.statusPagamento === "A prazo" || despesaForm.formaPagamento === "A prazo" || despesaForm.formaPagamento === "Desconto em folha") {
       if (!despesaForm.responsavelPagamento) {
         return alert("Para lançamento a prazo/desconto, selecione a empresa/cliente responsável pelo pagamento.");
-      }
-      if (!despesaForm.pagamentoPrazoComo) {
-        return alert("Informe como o pagamento a prazo será quitado/descontado.");
       }
     }
 
@@ -513,11 +510,10 @@ export default function App() {
                 )}
 
                 <Select label="Status do pagamento" value={despesaForm.statusPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, statusPagamento: v })} options={["Pago", "A prazo", "Pendente"]} />
-                <Select label="Forma de pagamento" value={despesaForm.formaPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, formaPagamento: v })} options={["Dinheiro", "Pix", "Cartão", "Boleto", "A prazo", "Desconto por empresa", "Outro"]} />
+                <Select label="Forma de pagamento" value={despesaForm.formaPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, formaPagamento: v })} options={["Dinheiro", "Pix", "Cartão", "Boleto", "A prazo", "Desconto em folha", "Outro"]} />
 
-                {despesaForm.statusPagamento === "A prazo" || despesaForm.formaPagamento === "A prazo" || despesaForm.formaPagamento === "Desconto por empresa" ? (
+                {despesaForm.statusPagamento === "A prazo" || despesaForm.formaPagamento === "A prazo" || despesaForm.formaPagamento === "Desconto em folha" ? (
                   <>
-                    <Select label="Como será pago/descontado?" value={despesaForm.pagamentoPrazoComo} onChange={(v) => setDespesaForm({ ...despesaForm, pagamentoPrazoComo: v })} options={["Pagar depois ao posto/fornecedor", "Descontar da empresa/cliente", "Descontar de acerto do motorista", "Boleto/fatura mensal", "Outro"]} />
                     <Select label="Empresa/cliente responsável pelo pagamento" value={despesaForm.responsavelPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, responsavelPagamento: v })} options={clientes.map(c => c.nome)} />
                     <Input label="Data de vencimento/previsão" type="date" value={despesaForm.dataVencimento} onChange={(v) => setDespesaForm({ ...despesaForm, dataVencimento: v })} />
                   </>
@@ -663,58 +659,69 @@ function ListaViagens({ viagens, apagarViagem }) {
   );
 }
 
+
 function ListaDespesas({ despesas, apagarDespesa, editarDespesa }) {
   return (
     <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
       <h2 className="text-2xl font-black mb-4">Abastecimentos e despesas cadastradas</h2>
-      <div className="overflow-auto">
-        <table className="w-full text-left text-sm">
-          <thead className="text-zinc-400">
-            <tr>
-              <th className="pb-3">Data</th>
-              <th className="pb-3">Caminhão</th>
-              <th className="pb-3">Tipo</th>
-              <th className="pb-3">Posto/empresa</th>
-              <th className="pb-3">Litros</th>
-              <th className="pb-3">Valor/L</th>
-              <th className="pb-3">KM painel</th>
-              <th className="pb-3">Pagamento</th>
-              <th className="pb-3">Como será pago</th>
-              <th className="pb-3">Responsável</th>
-              <th className="pb-3">Vencimento</th>
-              <th className="pb-3">Total</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {despesas.map((d) => (
-              <tr key={d.id} className="border-t border-zinc-800">
-                <td className="py-4">{formatarData(d.data)}</td>
-                <td>{d.caminhao || "-"}</td>
-                <td>{d.tipo}</td>
-                <td>{d.postoEmpresa || "-"}</td>
-                <td>{d.litros ? `${numero(d.litros).toLocaleString("pt-BR")} L` : "-"}</td>
-                <td>{d.valorLitro ? moeda(d.valorLitro) : "-"}</td>
-                <td>{d.kmPainel || "-"}</td>
-                <td>{d.statusPagamento} / {d.formaPagamento}</td>
-                <td>{d.pagamentoPrazoComo || "-"}</td>
-                <td>{d.responsavelPagamento || "-"}</td>
-                <td>{formatarData(d.dataVencimento)}</td>
-                <td className="text-red-400 font-bold">{moeda(d.valor)}</td>
-                <td>
-                  <div className="flex gap-3">
-                    <button onClick={() => editarDespesa(d)} className="text-zinc-200"><Pencil size={18} /></button>
-                    <button onClick={() => apagarDespesa(d.id)} className="text-red-400"><Trash2 size={18} /></button>
+
+      {despesas.length === 0 ? (
+        <p className="text-zinc-400">Nenhum lançamento cadastrado ainda.</p>
+      ) : (
+        <div className="grid gap-4">
+          {despesas.map((d) => (
+            <div key={d.id} className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <span className="rounded-full bg-red-600 px-3 py-1 text-xs font-bold">{d.tipo}</span>
+                    <span className="rounded-full bg-zinc-800 px-3 py-1 text-xs">{d.statusPagamento}</span>
+                    <span className="rounded-full bg-zinc-800 px-3 py-1 text-xs">{d.formaPagamento}</span>
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                  <h3 className="text-xl font-black">{d.caminhao || "Caminhão não informado"}</h3>
+                  <p className="text-zinc-400">{formatarData(d.data)} • {d.postoEmpresa || "Posto/empresa não informado"}</p>
+                </div>
+
+                <div className="text-left md:text-right">
+                  <p className="text-sm text-zinc-400">Total</p>
+                  <p className="text-2xl font-black text-red-400">{moeda(d.valor)}</p>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-4 gap-3 mt-5">
+                <Info label="Litros" value={d.litros ? `${numero(d.litros).toLocaleString("pt-BR")} L` : "-"} />
+                <Info label="Valor por litro" value={d.valorLitro ? moeda(d.valorLitro) : "-"} />
+                <Info label="KM painel" value={d.kmPainel || "-"} />
+                <Info label="Vencimento/previsão" value={formatarData(d.dataVencimento)} />
+                <Info label="Empresa/cliente responsável" value={d.responsavelPagamento || "-"} />
+                <Info label="Observação" value={d.descricao || "-"} />
+              </div>
+
+              <div className="flex gap-3 mt-5">
+                <button onClick={() => editarDespesa(d)} className="bg-zinc-800 hover:bg-zinc-700 rounded-2xl px-4 py-2 font-bold inline-flex items-center gap-2">
+                  <Pencil size={16} /> Editar
+                </button>
+                <button onClick={() => apagarDespesa(d.id)} className="bg-red-600 hover:bg-red-700 rounded-2xl px-4 py-2 font-bold inline-flex items-center gap-2">
+                  <Trash2 size={16} /> Apagar
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
+
+function Info({ label, value }) {
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
+      <p className="text-xs text-zinc-500 mb-1">{label}</p>
+      <p className="font-bold break-words">{value}</p>
+    </div>
+  );
+}
+
 
 function ListaContas({ despesas, editarDespesa }) {
   return (
@@ -729,7 +736,6 @@ function ListaContas({ despesas, editarDespesa }) {
               <th className="pb-3">Empresa/cliente a pagar</th>
               <th className="pb-3">Caminhão</th>
               <th className="pb-3">Tipo</th>
-              <th className="pb-3">Como será pago</th>
               <th className="pb-3">Total</th>
               <th></th>
             </tr>
@@ -742,7 +748,6 @@ function ListaContas({ despesas, editarDespesa }) {
                 <td>{d.responsavelPagamento || "-"}</td>
                 <td>{d.caminhao || "-"}</td>
                 <td>{d.tipo}</td>
-                <td>{d.pagamentoPrazoComo || "-"}</td>
                 <td className="text-red-400 font-bold">{moeda(d.valor)}</td>
                 <td><button onClick={() => editarDespesa(d)} className="text-zinc-200"><Pencil size={18} /></button></td>
               </tr>
