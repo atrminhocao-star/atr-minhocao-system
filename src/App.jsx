@@ -720,7 +720,14 @@ export default function App() {
               <Input label="Placa" value={caminhaoForm.placa} onChange={(v) => setCaminhaoForm({ ...caminhaoForm, placa: v })} />
               <Input label="Modelo" value={caminhaoForm.modelo} onChange={(v) => setCaminhaoForm({ ...caminhaoForm, modelo: v })} />
               <Input label="Motorista" value={caminhaoForm.motorista} onChange={(v) => setCaminhaoForm({ ...caminhaoForm, motorista: v })} />
-              <button onClick={salvarCaminhao} className="w-full mt-3 bg-red-600 hover:bg-red-700 rounded-2xl p-3 font-bold flex items-center justify-center gap-2"><Save size={18} /> {caminhaoEditandoId ? "Salvar alterações" : "Adicionar"}</button>\n              {caminhaoEditandoId && <button onClick={cancelarEdicaoCaminhao} className="w-full mt-2 bg-zinc-800 hover:bg-zinc-700 rounded-2xl p-3 font-bold flex items-center justify-center gap-2"><X size={18} /> Cancelar edição</button>
+              <button onClick={salvarCaminhao} className="w-full mt-3 bg-red-600 hover:bg-red-700 rounded-2xl p-3 font-bold flex items-center justify-center gap-2">
+                <Save size={18} /> {caminhaoEditandoId ? "Salvar alterações" : "Adicionar"}
+              </button>
+              {caminhaoEditandoId && (
+                <button onClick={cancelarEdicaoCaminhao} className="w-full mt-2 bg-zinc-800 hover:bg-zinc-700 rounded-2xl p-3 font-bold flex items-center justify-center gap-2">
+                  <X size={18} /> Cancelar edição
+                </button>
+              )}
             </section>
 
             <section className="md:col-span-2 bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
