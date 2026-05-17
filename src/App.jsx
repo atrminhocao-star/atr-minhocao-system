@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Truck, Route, Wallet, Fuel, Plus, Trash2, Save, LogOut, User, Lock, Droplets, Gauge, Building2, Filter, Pencil, X, CalendarDays } from "lucide-react";
 
 const CHAVE_PRINCIPAL = "atr-minhocao-dados";
-const CHAVES_ANTIGAS = ["atr-minhocao-v4", "atr-minhocao-v3", "atr-minhocao-v2"];
+const CHAVES_ANTIGAS = ["atr-minhocao-dados", "atr-minhocao-v4", "atr-minhocao-v3", "atr-minhocao-v2", "atr-minhocao-v5", "atr-minhocao-v6", "atr-minhocao-v7", "atr-minhocao-v8", "atr-minhocao-v9", "atr-minhocao-v10", "atr-minhocao-v11", "atr-minhocao-v12", "atr-minhocao-v13"];
 
 const moeda = (valor) => {
   const n = numero(valor);
@@ -52,6 +52,60 @@ const somarMeses = (dataISO, meses) => {
   const [ano, mes, dia] = dataISO.split("-").map(Number);
   const data = new Date(ano, mes - 1 + meses, dia);
   return data.toISOString().slice(0, 10);
+};
+
+const juntarPorId = (listas = []) => {
+  const mapa = new Map();
+
+  listas.flat().filter(Boolean).forEach((item) => {
+    const id = item.id || crypto.randomUUID();
+    mapa.set(id, { ...item, id });
+  });
+
+  return Array.from(mapa.values());
+};
+
+const carregarTodosDadosSalvos = () => {
+  const chaves = [
+    "atr-minhocao-dados",
+    "atr-minhocao-v13",
+    "atr-minhocao-v12",
+    "atr-minhocao-v11",
+    "atr-minhocao-v10",
+    "atr-minhocao-v9",
+    "atr-minhocao-v8",
+    "atr-minhocao-v7",
+    "atr-minhocao-v6",
+    "atr-minhocao-v5",
+    "atr-minhocao-v4",
+    "atr-minhocao-v3",
+    "atr-minhocao-v2",
+  ];
+
+  const dados = [];
+
+  chaves.forEach((chave) => {
+    try {
+      const bruto = localStorage.getItem(chave);
+      if (bruto) dados.push(JSON.parse(bruto));
+    } catch (e) {
+      console.warn("Erro lendo chave", chave, e);
+    }
+  });
+
+  if (!dados.length) return null;
+
+  return {
+    usuarios: juntarPorId(dados.map((d) => d.usuarios || [])),
+    clientes: juntarPorId(dados.map((d) => d.clientes || [])),
+    materiais: juntarPorId(dados.map((d) => d.materiais || [])),
+    caminhoes: juntarPorId(dados.map((d) => d.caminhoes || [])),
+    viagens: juntarPorId(dados.map((d) => d.viagens || [])),
+    despesas: juntarPorId(dados.map((d) => d.despesas || [])),
+    entradasCaixa: juntarPorId(dados.map((d) => d.entradasCaixa || [])),
+    saidasManuais: juntarPorId(dados.map((d) => d.saidasManuais || [])),
+    contasReceberFixas: juntarPorId(dados.map((d) => d.contasReceberFixas || [])),
+  };
 };
 
 const hojeISO = () => new Date().toISOString().slice(0, 10);
@@ -189,15 +243,19 @@ export default function App() {
   useEffect(() => {
     let dadosEncontrados = null;
 
-    const principal = localStorage.getItem(CHAVE_PRINCIPAL);
-    if (principal) {
-      dadosEncontrados = JSON.parse(principal);
-    } else {
-      for (const chave of CHAVES_ANTIGAS) {
-        const antigo = localStorage.getItem(chave);
-        if (antigo) {
-          dadosEncontrados = JSON.parse(antigo);
-          break;
+    dadosEncontrados = carregarTodosDadosSalvos();
+
+    if (!dadosEncontrados) {
+      const principal = localStorage.getItem(CHAVE_PRINCIPAL);
+      if (principal) {
+        dadosEncontrados = JSON.parse(principal);
+      } else {
+        for (const chave of CHAVES_ANTIGAS) {
+          const antigo = localStorage.getItem(chave);
+          if (antigo) {
+            dadosEncontrados = JSON.parse(antigo);
+            break;
+          }
         }
       }
     }
@@ -294,6 +352,7 @@ export default function App() {
   useEffect(() => {
     const dados = { usuarios, clientes, materiais, caminhoes, viagens, despesas, entradasCaixa, saidasManuais, contasReceberFixas };
     localStorage.setItem(CHAVE_PRINCIPAL, JSON.stringify(dados));
+    localStorage.setItem("atr-minhocao-v13", JSON.stringify(dados));
     localStorage.setItem("atr-minhocao-v4", JSON.stringify(dados));
   }, [usuarios, clientes, materiais, caminhoes, viagens, despesas, entradasCaixa, saidasManuais, contasReceberFixas]);
 
@@ -1092,6 +1151,29 @@ export default function App() {
     );
   }
 
+  const exportarBackupDados = () => {
+    const dados = {
+      usuarios,
+      clientes,
+      materiais,
+      caminhoes,
+      viagens,
+      despesas,
+      entradasCaixa,
+      saidasManuais,
+      contasReceberFixas,
+      exportadoEm: new Date().toISOString(),
+    };
+
+    const blob = new Blob([JSON.stringify(dados, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "backup-atr-minhocao.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const menu = [
     { id: "dashboard", nome: "Dashboard" },
     { id: "clientes", nome: "Clientes/Empresas" },
@@ -1121,6 +1203,9 @@ export default function App() {
                 <p className="font-bold">{logado.nome}</p>
                 <p className="text-xs text-zinc-400">{logado.perfil}</p>
               </div>
+              <button onClick={exportarBackupDados} className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 text-xs font-bold">
+                Backup
+              </button>
               <button onClick={sair} className="text-red-400"><LogOut /></button>
             </div>
           </div>
