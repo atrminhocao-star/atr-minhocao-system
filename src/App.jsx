@@ -25,6 +25,16 @@ const formatarData = (data) => {
   return `${partes[2]}/${partes[1]}/${partes[0]}`;
 };
 
+const dataBRParaISO = (dataBR) => {
+  if (!dataBR) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dataBR)) return dataBR;
+  const partes = String(dataBR).split("/");
+  if (partes.length !== 3) return "";
+  const [dia, mes, ano] = partes;
+  if (!dia || !mes || !ano) return "";
+  return `${ano.padStart(4, "0")}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`;
+};
+
 const normalizarFormaPagamento = (forma) => {
   if (forma === "Desconto por empresa") return "Desconto em folha";
   return forma || "-";
@@ -370,7 +380,8 @@ export default function App() {
         const okInicio = !filtroRecebimentos.inicio || v.previsaoPagamento >= filtroRecebimentos.inicio;
         const okFim = !filtroRecebimentos.fim || v.previsaoPagamento <= filtroRecebimentos.fim;
         const okCliente = !filtroRecebimentos.cliente || v.cliente === filtroRecebimentos.cliente;
-        return okInicio && okFim && okCliente;
+        const naoPago = !v.fretePago;
+        return okInicio && okFim && okCliente && naoPago;
       })
       .sort((a, b) => String(a.previsaoPagamento || "9999-12-31").localeCompare(String(b.previsaoPagamento || "9999-12-31")));
   }, [viagens, filtroRecebimentos]);
@@ -595,18 +606,37 @@ export default function App() {
   };
 
   const marcarFretePago = (viagem) => {
-    const dataPagamento = prompt("Informe a data de pagamento no formato AAAA-MM-DD:", hojeISO());
-    if (!dataPagamento) return;
+    const dataPadrao = viagem.dataPagamentoFrete ? formatarData(viagem.dataPagamentoFrete) : formatarData(hojeISO());
+    const dataDigitada = prompt("Informe a data de pagamento no formato DD/MM/AAAA:", dataPadrao);
+    if (!dataDigitada) return;
 
-    const entradaExistente = entradasCaixa.some((e) => e.viagemId === viagem.id);
+    const dataPagamento = dataBRParaISO(dataDigitada);
+    if (!dataPagamento) {
+      return alert("Data inválida. Use o formato DD/MM/AAAA.");
+    }
+
+    const entradaExistente = entradasCaixa.find((e) => e.viagemId === viagem.id);
 
     setViagens(viagens.map((v) =>
       v.id === viagem.id
-        ? { ...v, fretePago: true, dataPagamentoFrete: dataPagamento }
+        ? { ...v, fretePago: true, dataPagamentoFrete: dataPagamento, previsaoPagamento: "" }
         : v
     ));
 
-    if (!entradaExistente) {
+    if (entradaExistente) {
+      setEntradasCaixa(entradasCaixa.map((e) =>
+        e.viagemId === viagem.id
+          ? {
+              ...e,
+              data: dataPagamento,
+              valor: numero(viagem.frete),
+              descricao: `Frete recebido (${formatarData(viagem.data)}) - Pedido ${viagem.numeroPedido || "-"}`,
+              cliente: viagem.cliente || "",
+              caminhao: viagem.caminhao || "",
+            }
+          : e
+      ));
+    } else {
       setEntradasCaixa([
         ...entradasCaixa,
         {
@@ -621,6 +651,18 @@ export default function App() {
         },
       ]);
     }
+  };
+
+  const desfazerPagamentoFrete = (viagem) => {
+    if (!window.confirm("Deseja desfazer o pagamento deste frete? Ele voltará para Fretes a receber.")) return;
+
+    setViagens(viagens.map((v) =>
+      v.id === viagem.id
+        ? { ...v, fretePago: false, dataPagamentoFrete: "" }
+        : v
+    ));
+
+    setEntradasCaixa(entradasCaixa.filter((e) => e.viagemId !== viagem.id));
   };
 
   const resumoContasReceber = useMemo(() => {
@@ -1489,7 +1531,7 @@ export default function App() {
               <Card titulo="Clientes filtrados" valor={filtroRecebimentos.cliente || "Todos"} icone={Building2} />
             </div>
 
-            <ListaViagens viagens={fretesAReceber} apagarViagem={apagarViagemComConfirmacao} editarViagem={editarViagem} marcarFretePago={marcarFretePago} />
+            <ListaViagens viagens={fretesAReceber} apagarViagem={apagarViagemComConfirmacao} editarViagem={editarViagem} marcarFretePago={marcarFretePago} desfazerPagamentoFrete={desfazerPagamentoFrete} />
           </div>
         )}
 
@@ -1550,7 +1592,6 @@ export default function App() {
                   <Input label="Data da entrada" type="date" value={entradaForm.data} onChange={(v) => setEntradaForm({ ...entradaForm, data: v })} />
                   <Input label="Valor R$" value={entradaForm.valor} onChange={(v) => setEntradaForm({ ...entradaForm, valor: formatarValorDigitado(v) })} />
                   <Select label="Cliente/empresa" value={entradaForm.cliente} onChange={(v) => setEntradaForm({ ...entradaForm, cliente: v })} options={clientes.map(c => c.nome)} />
-                  <Select label="Caminhão" value={entradaForm.caminhao} onChange={(v) => setEntradaForm({ ...entradaForm, caminhao: v })} options={caminhoes.map(c => c.placa)} />
                   <Input label="Descrição" value={entradaForm.descricao} onChange={(v) => setEntradaForm({ ...entradaForm, descricao: v })} />
                 </div>
                 <button onClick={salvarEntradaCaixa} className="mt-4 bg-green-700 hover:bg-green-800 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2">
@@ -1579,7 +1620,7 @@ export default function App() {
               </button>
             </div>
 
-            <ListaFluxoCaixa fluxo={fluxoCaixa} apagarEntrada={(id) => setEntradasCaixa(entradasCaixa.filter(e => e.id !== id))} apagarSaida={(id) => setSaidasManuais(saidasManuais.filter(s => s.id !== id))} />
+            <ListaFluxoCaixa fluxo={fluxoCaixa} apagarEntrada={(id) => setEntradasCaixa(entradasCaixa.filter(e => e.id !== id))} apagarSaida={(id) => setSaidasManuais(saidasManuais.filter(s => s.id !== id))} viagens={viagens} marcarFretePago={marcarFretePago} desfazerPagamentoFrete={desfazerPagamentoFrete} />
           </div>
         )}
 
@@ -1820,7 +1861,7 @@ function ListaContasReceberFixas({ contas, marcarPago, apagarConta }) {
   );
 }
 
-function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida }) {
+function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, viagens, marcarFretePago, desfazerPagamentoFrete }) {
   return (
     <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
       <h2 className="text-2xl font-black mb-4">Movimentações do fluxo de caixa</h2>
@@ -1855,7 +1896,22 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida }) {
                 <td className="px-4 py-4">{item.descricao || "-"}</td>
                 <td className="px-4 py-4 whitespace-nowrap">{item.origem || "-"}</td>
                 <td className="px-4 py-4 rounded-r-2xl whitespace-nowrap">
-                  {item.origem === "Manual" ? (
+                  {item.origem === "Frete" && item.viagemId ? (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { const v = viagens.find((v) => v.id === item.viagemId); if (v) marcarFretePago(v); }}
+                        className="bg-green-900 hover:bg-green-800 rounded-xl px-3 py-2 font-bold"
+                      >
+                        Alterar data
+                      </button>
+                      <button
+                        onClick={() => { const v = viagens.find((v) => v.id === item.viagemId); if (v) desfazerPagamentoFrete(v); }}
+                        className="bg-yellow-700 hover:bg-yellow-800 rounded-xl px-3 py-2 font-bold"
+                      >
+                        Desfazer
+                      </button>
+                    </div>
+                  ) : item.origem === "Manual" ? (
                     <button
                       onClick={() => item.tipo === "Entrada" ? apagarEntrada(item.id) : apagarSaida(item.id)}
                       className="bg-red-600 hover:bg-red-700 rounded-xl px-3 py-2 font-bold"
@@ -1881,13 +1937,17 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida }) {
   );
 }
 
-function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago }) {
+
+function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, desfazerPagamentoFrete }) {
   const [ordenacao, setOrdenacao] = React.useState({
     campo: "data",
     direcao: "desc",
   });
+  const [pagina, setPagina] = React.useState(1);
+  const porPagina = 15;
 
   const alternarOrdenacao = (campo) => {
+    setPagina(1);
     setOrdenacao((atual) => ({
       campo,
       direcao: atual.campo === campo && atual.direcao === "asc" ? "desc" : "asc",
@@ -1919,88 +1979,131 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago }) 
     return 0;
   });
 
+  const totalPaginas = Math.max(1, Math.ceil(viagensOrdenadas.length / porPagina));
+  const inicio = (pagina - 1) * porPagina;
+  const viagensPagina = viagensOrdenadas.slice(inicio, inicio + porPagina);
+
   const seta = (campo) => {
     if (ordenacao.campo !== campo) return "↕";
     return ordenacao.direcao === "asc" ? "↑" : "↓";
   };
 
+  const BotaoOrdenar = ({ campo, children }) => (
+    <button onClick={() => alternarOrdenacao(campo)} className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 text-xs font-bold">
+      {children} {seta(campo)}
+    </button>
+  );
+
   return (
     <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-      <h2 className="text-2xl font-black mb-4">Viagens cadastradas</h2>
-      <p className="text-zinc-400 text-sm mb-4">
-        Clique em Data, Últimas cadastradas, Pedido, Cliente, Caminhão, Frete ou Status para ordenar.
-      </p>
-      <div className="overflow-auto">
-        <table className="w-full min-w-[1300px] text-left text-sm border-separate border-spacing-y-3">
-          <thead className="text-zinc-400">
-            <tr>
-              <th className="px-4 pb-2 cursor-pointer hover:text-white" onClick={() => alternarOrdenacao("data")}>Data {seta("data")}</th>
-              <th className="px-4 pb-2 cursor-pointer hover:text-white" onClick={() => alternarOrdenacao("createdAt")}>Cadastro {seta("createdAt")}</th>
-              <th className="px-4 pb-2 cursor-pointer hover:text-white" onClick={() => alternarOrdenacao("cliente")}>Cliente {seta("cliente")}</th>
-              <th className="px-4 pb-2 cursor-pointer hover:text-white" onClick={() => alternarOrdenacao("numeroPedido")}>Pedido {seta("numeroPedido")}</th>
-              <th className="px-4 pb-2 cursor-pointer hover:text-white" onClick={() => alternarOrdenacao("caminhao")}>Caminhão {seta("caminhao")}</th>
-              <th className="px-4 pb-2">Material</th>
-              <th className="px-4 pb-2">Origem</th>
-              <th className="px-4 pb-2">Destino</th>
-              <th className="px-4 pb-2">Quantidade</th>
-              <th className="px-4 pb-2 cursor-pointer hover:text-white" onClick={() => alternarOrdenacao("frete")}>Frete {seta("frete")}</th>
-              <th className="px-4 pb-2">Prev. pagamento</th>
-              <th className="px-4 pb-2 cursor-pointer hover:text-white" onClick={() => alternarOrdenacao("status")}>Status {seta("status")}</th>
-              <th className="px-4 pb-2">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {viagensOrdenadas.map((v) => (
-              <tr key={v.id} className="bg-zinc-950">
-                <td className="px-4 py-4 rounded-l-2xl whitespace-nowrap">{formatarData(v.data)}</td>
-                <td className="px-4 py-4 whitespace-nowrap">{v.createdAt ? formatarData(String(v.createdAt).slice(0,10)) : "-"}</td>
-                <td className="px-4 py-4 whitespace-nowrap">{v.cliente || "-"}</td>
-                <td className="px-4 py-4 font-bold whitespace-nowrap">{v.numeroPedido || "-"}</td>
-                <td className="px-4 py-4 whitespace-nowrap">{v.caminhao || "-"}</td>
-                <td className="px-4 py-4 whitespace-nowrap">{v.material || "-"}</td>
-                <td className="px-4 py-4 whitespace-nowrap">{v.origem || "-"}</td>
-                <td className="px-4 py-4 whitespace-nowrap">{v.destino || "-"}</td>
-                <td className="px-4 py-4 whitespace-nowrap">{v.quantidade ? `${v.quantidade} ${v.unidade || ""}` : "-"}</td>
-                <td className="px-4 py-4 text-red-400 font-bold whitespace-nowrap">{moeda(v.frete)}</td>
-                <td className="px-4 py-4 whitespace-nowrap">{formatarData(v.previsaoPagamento)}</td>
-                <td className="px-4 py-4 whitespace-nowrap">{v.status || "-"}</td>
-                <td className="px-4 py-4 rounded-r-2xl whitespace-nowrap">
-                  <div className="flex gap-2">
-                    {marcarFretePago && !v.fretePago && (
-                      <button onClick={() => marcarFretePago(v)} className="bg-green-700 hover:bg-green-800 rounded-xl px-3 py-2 font-bold inline-flex items-center gap-2">
-                        <Save size={16} /> Marcar pago
-                      </button>
-                    )}
-                    {marcarFretePago && v.fretePago && (
-                      <span className="bg-green-900 rounded-xl px-3 py-2 font-bold text-green-200">
-                        Pago {formatarData(v.dataPagamentoFrete)}
-                      </span>
-                    )}
-                    {editarViagem && (
-                      <button onClick={() => editarViagem(v)} className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 font-bold inline-flex items-center gap-2">
-                        <Pencil size={16} /> Editar
-                      </button>
-                    )}
-                    <button onClick={() => apagarViagem(v.id)} className="bg-red-600 hover:bg-red-700 rounded-xl px-3 py-2 font-bold inline-flex items-center gap-2">
-                      <Trash2 size={16} /> Apagar
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+        <div>
+          <h2 className="text-2xl font-black">Viagens cadastradas</h2>
+          <p className="text-zinc-400 text-sm">
+            Exibindo até 15 viagens por página. Total: {viagensOrdenadas.length}.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <BotaoOrdenar campo="data">Data</BotaoOrdenar>
+          <BotaoOrdenar campo="createdAt">Cadastro</BotaoOrdenar>
+          <BotaoOrdenar campo="numeroPedido">Pedido</BotaoOrdenar>
+          <BotaoOrdenar campo="cliente">Cliente</BotaoOrdenar>
+          <BotaoOrdenar campo="frete">Frete</BotaoOrdenar>
+          <BotaoOrdenar campo="status">Status</BotaoOrdenar>
+        </div>
+      </div>
+
+      <div className="grid gap-3">
+        {viagensPagina.map((v) => (
+          <div key={v.id} className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex flex-wrap gap-2 mb-2">
+                  <span className="bg-red-600 rounded-full px-3 py-1 text-xs font-bold">{formatarData(v.data)}</span>
+                  <span className="bg-zinc-800 rounded-full px-3 py-1 text-xs">Pedido: {v.numeroPedido || "Não informado"}</span>
+                  <span className="bg-zinc-800 rounded-full px-3 py-1 text-xs">{v.status || "-"}</span>
+                  {v.fretePago && (
+                    <span className="bg-green-800 rounded-full px-3 py-1 text-xs">Pago: {formatarData(v.dataPagamentoFrete)}</span>
+                  )}
+                </div>
+
+                <h3 className="font-black text-lg">{v.cliente || "-"}</h3>
+                <p className="text-zinc-400 text-sm">
+                  {v.caminhao || "-"} • {v.material || "-"} • {v.quantidade ? `${v.quantidade} ${v.unidade || ""}` : "Quantidade não informada"}
+                </p>
+                <p className="text-zinc-300 text-sm mt-1">
+                  {v.origem || "-"} → {v.destino || "-"}
+                </p>
+                <p className="text-zinc-500 text-xs mt-1">
+                  Previsão pagamento: {formatarData(v.previsaoPagamento)}
+                </p>
+              </div>
+
+              <div className="lg:text-right">
+                <p className="text-zinc-400 text-xs">Frete</p>
+                <p className="text-red-400 font-black text-xl">{moeda(v.frete)}</p>
+                <div className="flex flex-wrap lg:justify-end gap-2 mt-3">
+                  {marcarFretePago && !v.fretePago && (
+                    <button onClick={() => marcarFretePago(v)} className="bg-green-700 hover:bg-green-800 rounded-xl px-3 py-2 text-xs font-bold">
+                      Marcar pago
                     </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {viagensOrdenadas.length === 0 && (
-              <tr>
-                <td colSpan="12" className="px-4 py-6 text-zinc-400">
-                  Nenhuma viagem cadastrada para exibir.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                  )}
+                  {marcarFretePago && v.fretePago && (
+                    <>
+                      <button onClick={() => marcarFretePago(v)} className="bg-green-900 hover:bg-green-800 rounded-xl px-3 py-2 text-xs font-bold text-green-200">
+                        Alterar data pagamento
+                      </button>
+                      {desfazerPagamentoFrete && (
+                        <button onClick={() => desfazerPagamentoFrete(v)} className="bg-yellow-700 hover:bg-yellow-800 rounded-xl px-3 py-2 text-xs font-bold">
+                          Desfazer pagamento
+                        </button>
+                      )}
+                    </>
+                  )}
+                  {editarViagem && (
+                    <button onClick={() => editarViagem(v)} className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 text-xs font-bold">
+                      Editar
+                    </button>
+                  )}
+                  <button onClick={() => apagarViagem(v.id)} className="bg-red-600 hover:bg-red-700 rounded-xl px-3 py-2 text-xs font-bold">
+                    Apagar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {viagensPagina.length === 0 && (
+          <p className="text-zinc-400 py-6">Nenhuma viagem cadastrada para exibir.</p>
+        )}
+      </div>
+
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mt-5">
+        <p className="text-zinc-400 text-sm">
+          Página {pagina} de {totalPaginas}
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setPagina(Math.max(1, pagina - 1))}
+            disabled={pagina === 1}
+            className="bg-zinc-800 disabled:opacity-40 hover:bg-zinc-700 rounded-xl px-4 py-2 font-bold"
+          >
+            Anterior
+          </button>
+          <button
+            onClick={() => setPagina(Math.min(totalPaginas, pagina + 1))}
+            disabled={pagina === totalPaginas}
+            className="bg-zinc-800 disabled:opacity-40 hover:bg-zinc-700 rounded-xl px-4 py-2 font-bold"
+          >
+            Próxima
+          </button>
+        </div>
       </div>
     </section>
   );
 }
+
 
 
 function ListaDespesas({ despesas, apagarDespesa, editarDespesa }) {
