@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Truck, Route, Wallet, Fuel, Plus, Trash2, Save, LogOut, User, Lock, Droplets, Gauge, Building2, Filter } from "lucide-react";
+import { Truck, Route, Wallet, Fuel, Plus, Trash2, Save, LogOut, User, Lock, Droplets, Gauge, Building2, Filter, Pencil, X, CalendarDays } from "lucide-react";
+
+const CHAVE_PRINCIPAL = "atr-minhocao-dados";
+const CHAVES_ANTIGAS = ["atr-minhocao-v4", "atr-minhocao-v3", "atr-minhocao-v2"];
 
 const moeda = (valor) =>
   Number(valor || 0).toLocaleString("pt-BR", {
@@ -8,6 +11,13 @@ const moeda = (valor) =>
   });
 
 const numero = (valor) => Number(String(valor || "0").replace(",", "."));
+
+const formatarData = (data) => {
+  if (!data) return "-";
+  const partes = String(data).split("-");
+  if (partes.length !== 3) return data;
+  return `${partes[2]}/${partes[1]}/${partes[0]}`;
+};
 
 const dadosIniciais = {
   usuarios: [
@@ -25,6 +35,23 @@ const dadosIniciais = {
   despesas: [],
 };
 
+const despesaVazia = {
+  data: "",
+  caminhao: "",
+  tipo: "Combustível",
+  litros: "",
+  valorLitro: "",
+  kmPainel: "",
+  postoEmpresa: "",
+  formaPagamento: "Pix",
+  pagamentoPrazoComo: "",
+  dataVencimento: "",
+  responsavelPagamento: "",
+  descricao: "",
+  valor: "",
+  statusPagamento: "Pago",
+};
+
 export default function App() {
   const [aba, setAba] = useState("dashboard");
   const [logado, setLogado] = useState(null);
@@ -40,6 +67,7 @@ export default function App() {
 
   const [usuarioForm, setUsuarioForm] = useState({ nome: "", usuario: "", senha: "", perfil: "Operacional" });
   const [clienteForm, setClienteForm] = useState({ nome: "", contato: "", telefone: "", cidade: "" });
+  const [clienteEditandoId, setClienteEditandoId] = useState(null);
   const [caminhaoForm, setCaminhaoForm] = useState({ placa: "", modelo: "", motorista: "" });
 
   const [viagemForm, setViagemForm] = useState({
@@ -52,34 +80,33 @@ export default function App() {
     status: "Programada",
   });
 
-  const [despesaForm, setDespesaForm] = useState({
-    data: "",
-    caminhao: "",
-    tipo: "Combustível",
-    litros: "",
-    valorLitro: "",
-    kmPainel: "",
-    postoEmpresa: "",
-    formaPagamento: "Pix",
-    pagamentoPrazoComo: "",
-    dataVencimento: "",
-    responsavelPagamento: "",
-    descricao: "",
-    valor: "",
-    statusPagamento: "Pago",
-  });
+  const [despesaForm, setDespesaForm] = useState(despesaVazia);
+  const [despesaEditandoId, setDespesaEditandoId] = useState(null);
 
   useEffect(() => {
-    const salvo = localStorage.getItem("atr-minhocao-v4");
+    let dadosEncontrados = null;
+
+    const principal = localStorage.getItem(CHAVE_PRINCIPAL);
+    if (principal) {
+      dadosEncontrados = JSON.parse(principal);
+    } else {
+      for (const chave of CHAVES_ANTIGAS) {
+        const antigo = localStorage.getItem(chave);
+        if (antigo) {
+          dadosEncontrados = JSON.parse(antigo);
+          break;
+        }
+      }
+    }
+
     const sessao = localStorage.getItem("atr-minhocao-login");
 
-    if (salvo) {
-      const dados = JSON.parse(salvo);
-      setUsuarios(dados.usuarios || dadosIniciais.usuarios);
-      setClientes(dados.clientes || []);
-      setCaminhoes(dados.caminhoes || dadosIniciais.caminhoes);
-      setViagens(dados.viagens || []);
-      setDespesas(dados.despesas || []);
+    if (dadosEncontrados) {
+      setUsuarios(dadosEncontrados.usuarios || dadosIniciais.usuarios);
+      setClientes(dadosEncontrados.clientes || []);
+      setCaminhoes(dadosEncontrados.caminhoes || dadosIniciais.caminhoes);
+      setViagens(dadosEncontrados.viagens || []);
+      setDespesas(dadosEncontrados.despesas || []);
     } else {
       setUsuarios(dadosIniciais.usuarios);
       setClientes(dadosIniciais.clientes);
@@ -92,7 +119,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("atr-minhocao-v4", JSON.stringify({ usuarios, clientes, caminhoes, viagens, despesas }));
+    const dados = { usuarios, clientes, caminhoes, viagens, despesas };
+    localStorage.setItem(CHAVE_PRINCIPAL, JSON.stringify(dados));
+    localStorage.setItem("atr-minhocao-v4", JSON.stringify(dados));
   }, [usuarios, clientes, caminhoes, viagens, despesas]);
 
   const viagensFiltradas = useMemo(() => {
@@ -103,13 +132,19 @@ export default function App() {
     });
   }, [viagens, filtros]);
 
+  const contasAPagar = useMemo(() => {
+    return despesas
+      .filter((d) => d.statusPagamento === "A prazo" || d.statusPagamento === "Pendente")
+      .sort((a, b) => String(a.dataVencimento || "9999-12-31").localeCompare(String(b.dataVencimento || "9999-12-31")));
+  }, [despesas]);
+
   const totais = useMemo(() => {
     const frete = viagensFiltradas.reduce((s, v) => s + numero(v.frete), 0);
     const despesasTotal = despesas.reduce((s, d) => s + numero(d.valor), 0);
     const litros = despesas.reduce((s, d) => s + numero(d.litros), 0);
-    const pendente = despesas.filter(d => d.statusPagamento === "A prazo" || d.statusPagamento === "Pendente").reduce((s, d) => s + numero(d.valor), 0);
+    const pendente = contasAPagar.reduce((s, d) => s + numero(d.valor), 0);
     return { frete, despesasTotal, lucro: frete - despesasTotal, litros, pendente };
-  }, [viagensFiltradas, despesas]);
+  }, [viagensFiltradas, despesas, contasAPagar]);
 
   const viagensPorCliente = useMemo(() => {
     return clientes.map((c) => {
@@ -150,10 +185,36 @@ export default function App() {
     setUsuarioForm({ nome: "", usuario: "", senha: "", perfil: "Operacional" });
   };
 
-  const adicionarCliente = () => {
-    if (!clienteForm.nome) return alert("Informe o nome do cliente.");
-    if (clientes.some((c) => c.nome.toLowerCase() === clienteForm.nome.toLowerCase())) return alert("Esse cliente já existe.");
-    setClientes([...clientes, { id: crypto.randomUUID(), ...clienteForm }]);
+  const salvarCliente = () => {
+    if (!clienteForm.nome) return alert("Informe o nome do cliente/empresa.");
+
+    if (!clienteEditandoId && clientes.some((c) => c.nome.toLowerCase() === clienteForm.nome.toLowerCase())) {
+      return alert("Esse cliente/empresa já existe.");
+    }
+
+    if (clienteEditandoId) {
+      setClientes(clientes.map((c) => c.id === clienteEditandoId ? { ...c, ...clienteForm } : c));
+      setClienteEditandoId(null);
+    } else {
+      setClientes([...clientes, { id: crypto.randomUUID(), ...clienteForm }]);
+    }
+
+    setClienteForm({ nome: "", contato: "", telefone: "", cidade: "" });
+  };
+
+  const editarCliente = (cliente) => {
+    setClienteEditandoId(cliente.id);
+    setClienteForm({
+      nome: cliente.nome || "",
+      contato: cliente.contato || "",
+      telefone: cliente.telefone || "",
+      cidade: cliente.cidade || "",
+    });
+    setAba("clientes");
+  };
+
+  const cancelarEdicaoCliente = () => {
+    setClienteEditandoId(null);
     setClienteForm({ nome: "", contato: "", telefone: "", cidade: "" });
   };
 
@@ -171,7 +232,7 @@ export default function App() {
     setViagemForm({ data: "", caminhao: "", origem: "", destino: "", cliente: "", frete: "", status: "Programada" });
   };
 
-  const adicionarDespesa = () => {
+  const salvarDespesa = () => {
     if (!despesaForm.data || !despesaForm.caminhao || !despesaForm.tipo) return alert("Informe data, caminhão e tipo da despesa.");
 
     let valorFinal = numero(despesaForm.valor);
@@ -183,28 +244,52 @@ export default function App() {
       valorFinal = numero(despesaForm.litros) * numero(despesaForm.valorLitro);
     }
 
-    if (despesaForm.statusPagamento === "A prazo" && !despesaForm.pagamentoPrazoComo) {
-      return alert("Informe como o pagamento a prazo será quitado/descontado.");
+    if (despesaForm.statusPagamento === "A prazo" || despesaForm.formaPagamento === "A prazo" || despesaForm.formaPagamento === "Desconto por empresa") {
+      if (!despesaForm.responsavelPagamento) {
+        return alert("Para lançamento a prazo/desconto, selecione a empresa/cliente responsável pelo pagamento.");
+      }
+      if (!despesaForm.pagamentoPrazoComo) {
+        return alert("Informe como o pagamento a prazo será quitado/descontado.");
+      }
     }
 
-    setDespesas([...despesas, { id: crypto.randomUUID(), ...despesaForm, valor: valorFinal }]);
+    const despesaSalva = { ...despesaForm, valor: valorFinal };
 
+    if (despesaEditandoId) {
+      setDespesas(despesas.map((d) => d.id === despesaEditandoId ? { ...d, ...despesaSalva } : d));
+      setDespesaEditandoId(null);
+    } else {
+      setDespesas([...despesas, { id: crypto.randomUUID(), ...despesaSalva }]);
+    }
+
+    setDespesaForm(despesaVazia);
+  };
+
+  const editarDespesa = (despesa) => {
+    setDespesaEditandoId(despesa.id);
     setDespesaForm({
-      data: "",
-      caminhao: "",
-      tipo: "Combustível",
-      litros: "",
-      valorLitro: "",
-      kmPainel: "",
-      postoEmpresa: "",
-      formaPagamento: "Pix",
-      pagamentoPrazoComo: "",
-      dataVencimento: "",
-      responsavelPagamento: "",
-      descricao: "",
-      valor: "",
-      statusPagamento: "Pago",
+      data: despesa.data || "",
+      caminhao: despesa.caminhao || "",
+      tipo: despesa.tipo || "Combustível",
+      litros: despesa.litros || "",
+      valorLitro: despesa.valorLitro || "",
+      kmPainel: despesa.kmPainel || "",
+      postoEmpresa: despesa.postoEmpresa || "",
+      formaPagamento: despesa.formaPagamento || "Pix",
+      pagamentoPrazoComo: despesa.pagamentoPrazoComo || "",
+      dataVencimento: despesa.dataVencimento || "",
+      responsavelPagamento: despesa.responsavelPagamento || "",
+      descricao: despesa.descricao || "",
+      valor: despesa.valor || "",
+      statusPagamento: despesa.statusPagamento || "Pago",
     });
+    setAba("despesas");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const cancelarEdicaoDespesa = () => {
+    setDespesaEditandoId(null);
+    setDespesaForm(despesaVazia);
   };
 
   if (!logado) {
@@ -224,10 +309,11 @@ export default function App() {
 
   const menu = [
     { id: "dashboard", nome: "Dashboard" },
-    { id: "clientes", nome: "Clientes" },
+    { id: "clientes", nome: "Clientes/Empresas" },
     { id: "caminhoes", nome: "Caminhões" },
     { id: "viagens", nome: "Viagens" },
     { id: "despesas", nome: "Abastecimentos/Despesas" },
+    { id: "contas", nome: "Contas a pagar" },
     { id: "usuarios", nome: "Usuários" },
   ];
 
@@ -276,7 +362,7 @@ export default function App() {
               <Card titulo="Viagens filtradas" valor={viagensFiltradas.length} icone={Route} />
               <Card titulo="Fretes filtrados" valor={moeda(totais.frete)} icone={Wallet} />
               <Card titulo="Despesas totais" valor={moeda(totais.despesasTotal)} icone={Fuel} />
-              <Card titulo="A prazo/pendente" valor={moeda(totais.pendente)} icone={Wallet} destaque />
+              <Card titulo="Contas a pagar" valor={moeda(totais.pendente)} icone={CalendarDays} destaque />
             </div>
 
             <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
@@ -320,26 +406,30 @@ export default function App() {
         {aba === "clientes" && (
           <div className="grid md:grid-cols-3 gap-5">
             <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-              <h2 className="text-2xl font-black mb-4">Novo cliente</h2>
+              <h2 className="text-2xl font-black mb-4">{clienteEditandoId ? "Editar cliente/empresa" : "Novo cliente/empresa"}</h2>
               <Input label="Nome do cliente/empresa" value={clienteForm.nome} onChange={(v) => setClienteForm({ ...clienteForm, nome: v })} icon={Building2} />
               <Input label="Contato" value={clienteForm.contato} onChange={(v) => setClienteForm({ ...clienteForm, contato: v })} />
               <Input label="Telefone" value={clienteForm.telefone} onChange={(v) => setClienteForm({ ...clienteForm, telefone: v })} />
               <Input label="Cidade/UF" value={clienteForm.cidade} onChange={(v) => setClienteForm({ ...clienteForm, cidade: v })} />
-              <button onClick={adicionarCliente} className="w-full mt-3 bg-red-600 hover:bg-red-700 rounded-2xl p-3 font-bold flex items-center justify-center gap-2"><Plus size={18} /> Adicionar cliente</button>
+              <button onClick={salvarCliente} className="w-full mt-3 bg-red-600 hover:bg-red-700 rounded-2xl p-3 font-bold flex items-center justify-center gap-2"><Save size={18} /> {clienteEditandoId ? "Salvar alterações" : "Adicionar cliente"}</button>
+              {clienteEditandoId && <button onClick={cancelarEdicaoCliente} className="w-full mt-2 bg-zinc-800 hover:bg-zinc-700 rounded-2xl p-3 font-bold flex items-center justify-center gap-2"><X size={18} /> Cancelar edição</button>}
             </section>
 
             <section className="md:col-span-2 bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-              <h2 className="text-2xl font-black mb-4">Clientes cadastrados</h2>
+              <h2 className="text-2xl font-black mb-4">Clientes/empresas cadastrados</h2>
               <div className="space-y-3">
                 {clientes.map((c) => (
-                  <div key={c.id} className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 flex justify-between">
+                  <div key={c.id} className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 flex justify-between gap-3">
                     <div>
                       <p className="font-black text-lg">{c.nome}</p>
                       <p className="text-zinc-400">Contato: {c.contato || "-"}</p>
                       <p className="text-zinc-400">Telefone: {c.telefone || "-"}</p>
                       <p className="text-zinc-400">Cidade: {c.cidade || "-"}</p>
                     </div>
-                    <button onClick={() => setClientes(clientes.filter(item => item.id !== c.id))} className="text-red-400"><Trash2 /></button>
+                    <div className="flex gap-3">
+                      <button onClick={() => editarCliente(c)} className="text-zinc-200"><Pencil /></button>
+                      <button onClick={() => setClientes(clientes.filter(item => item.id !== c.id))} className="text-red-400"><Trash2 /></button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -379,7 +469,7 @@ export default function App() {
           <div className="space-y-5">
             <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
               <h2 className="text-2xl font-black mb-4">Nova viagem</h2>
-              <p className="text-zinc-400 mb-4">O diesel foi removido daqui. Abastecimentos são lançados na aba de despesas por caminhão.</p>
+              <p className="text-zinc-400 mb-4">O diesel fica apenas na aba de abastecimentos/despesas por caminhão.</p>
               <div className="grid md:grid-cols-4 gap-3">
                 <Input label="Data" type="date" value={viagemForm.data} onChange={(v) => setViagemForm({ ...viagemForm, data: v })} />
                 <Select label="Cliente" value={viagemForm.cliente} onChange={(v) => setViagemForm({ ...viagemForm, cliente: v })} options={clientes.map(c => c.nome)} />
@@ -399,7 +489,7 @@ export default function App() {
         {aba === "despesas" && (
           <div className="space-y-5">
             <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-              <h2 className="text-2xl font-black mb-1">Novo abastecimento/despesa por caminhão</h2>
+              <h2 className="text-2xl font-black mb-1">{despesaEditandoId ? "Editar abastecimento/despesa" : "Novo abastecimento/despesa por caminhão"}</h2>
               <p className="text-zinc-400 mb-4">Controle combustível e despesas independentes da viagem.</p>
 
               <div className="grid md:grid-cols-4 gap-3">
@@ -428,7 +518,7 @@ export default function App() {
                 {despesaForm.statusPagamento === "A prazo" || despesaForm.formaPagamento === "A prazo" || despesaForm.formaPagamento === "Desconto por empresa" ? (
                   <>
                     <Select label="Como será pago/descontado?" value={despesaForm.pagamentoPrazoComo} onChange={(v) => setDespesaForm({ ...despesaForm, pagamentoPrazoComo: v })} options={["Pagar depois ao posto/fornecedor", "Descontar da empresa/cliente", "Descontar de acerto do motorista", "Boleto/fatura mensal", "Outro"]} />
-                    <Input label="Empresa responsável pelo desconto/pagamento" value={despesaForm.responsavelPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, responsavelPagamento: v })} />
+                    <Select label="Empresa/cliente responsável pelo pagamento" value={despesaForm.responsavelPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, responsavelPagamento: v })} options={clientes.map(c => c.nome)} />
                     <Input label="Data de vencimento/previsão" type="date" value={despesaForm.dataVencimento} onChange={(v) => setDespesaForm({ ...despesaForm, dataVencimento: v })} />
                   </>
                 ) : null}
@@ -436,10 +526,22 @@ export default function App() {
                 <Input label="Observação" value={despesaForm.descricao} onChange={(v) => setDespesaForm({ ...despesaForm, descricao: v })} />
               </div>
 
-              <button onClick={adicionarDespesa} className="mt-4 bg-red-600 hover:bg-red-700 rounded-2xl px-6 py-3 font-bold flex items-center gap-2"><Save size={18} /> Salvar lançamento</button>
+              <button onClick={salvarDespesa} className="mt-4 bg-red-600 hover:bg-red-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2"><Save size={18} /> {despesaEditandoId ? "Salvar alterações" : "Salvar lançamento"}</button>
+              {despesaEditandoId && <button onClick={cancelarEdicaoDespesa} className="mt-4 ml-2 bg-zinc-800 hover:bg-zinc-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2"><X size={18} /> Cancelar edição</button>}
             </section>
 
-            <ListaDespesas despesas={despesas} apagarDespesa={(id) => setDespesas(despesas.filter(d => d.id !== id))} />
+            <ListaDespesas despesas={despesas} apagarDespesa={(id) => setDespesas(despesas.filter(d => d.id !== id))} editarDespesa={editarDespesa} />
+          </div>
+        )}
+
+        {aba === "contas" && (
+          <div className="space-y-5">
+            <div className="grid md:grid-cols-3 gap-4">
+              <Card titulo="Contas a pagar" valor={contasAPagar.length} icone={CalendarDays} />
+              <Card titulo="Valor total em aberto" valor={moeda(totais.pendente)} icone={Wallet} destaque />
+              <Card titulo="Lançamentos totais" valor={despesas.length} icone={Fuel} />
+            </div>
+            <ListaContas despesas={contasAPagar} editarDespesa={editarDespesa} />
           </div>
         )}
 
@@ -544,7 +646,7 @@ function ListaViagens({ viagens, apagarViagem }) {
           <tbody>
             {viagens.map((v) => (
               <tr key={v.id} className="border-t border-zinc-800">
-                <td className="py-4">{v.data || "-"}</td>
+                <td className="py-4">{formatarData(v.data)}</td>
                 <td>{v.cliente || "-"}</td>
                 <td>{v.caminhao || "-"}</td>
                 <td>{v.origem}</td>
@@ -561,7 +663,7 @@ function ListaViagens({ viagens, apagarViagem }) {
   );
 }
 
-function ListaDespesas({ despesas, apagarDespesa }) {
+function ListaDespesas({ despesas, apagarDespesa, editarDespesa }) {
   return (
     <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
       <h2 className="text-2xl font-black mb-4">Abastecimentos e despesas cadastradas</h2>
@@ -587,7 +689,7 @@ function ListaDespesas({ despesas, apagarDespesa }) {
           <tbody>
             {despesas.map((d) => (
               <tr key={d.id} className="border-t border-zinc-800">
-                <td className="py-4">{d.data || "-"}</td>
+                <td className="py-4">{formatarData(d.data)}</td>
                 <td>{d.caminhao || "-"}</td>
                 <td>{d.tipo}</td>
                 <td>{d.postoEmpresa || "-"}</td>
@@ -597,9 +699,52 @@ function ListaDespesas({ despesas, apagarDespesa }) {
                 <td>{d.statusPagamento} / {d.formaPagamento}</td>
                 <td>{d.pagamentoPrazoComo || "-"}</td>
                 <td>{d.responsavelPagamento || "-"}</td>
-                <td>{d.dataVencimento || "-"}</td>
+                <td>{formatarData(d.dataVencimento)}</td>
                 <td className="text-red-400 font-bold">{moeda(d.valor)}</td>
-                <td><button onClick={() => apagarDespesa(d.id)} className="text-red-400"><Trash2 size={18} /></button></td>
+                <td>
+                  <div className="flex gap-3">
+                    <button onClick={() => editarDespesa(d)} className="text-zinc-200"><Pencil size={18} /></button>
+                    <button onClick={() => apagarDespesa(d.id)} className="text-red-400"><Trash2 size={18} /></button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function ListaContas({ despesas, editarDespesa }) {
+  return (
+    <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+      <h2 className="text-2xl font-black mb-4">Contas a pagar por data</h2>
+      <div className="overflow-auto">
+        <table className="w-full text-left text-sm">
+          <thead className="text-zinc-400">
+            <tr>
+              <th className="pb-3">Vencimento</th>
+              <th className="pb-3">Data lançamento</th>
+              <th className="pb-3">Empresa/cliente a pagar</th>
+              <th className="pb-3">Caminhão</th>
+              <th className="pb-3">Tipo</th>
+              <th className="pb-3">Como será pago</th>
+              <th className="pb-3">Total</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {despesas.map((d) => (
+              <tr key={d.id} className="border-t border-zinc-800">
+                <td className="py-4">{formatarData(d.dataVencimento)}</td>
+                <td>{formatarData(d.data)}</td>
+                <td>{d.responsavelPagamento || "-"}</td>
+                <td>{d.caminhao || "-"}</td>
+                <td>{d.tipo}</td>
+                <td>{d.pagamentoPrazoComo || "-"}</td>
+                <td className="text-red-400 font-bold">{moeda(d.valor)}</td>
+                <td><button onClick={() => editarDespesa(d)} className="text-zinc-200"><Pencil size={18} /></button></td>
               </tr>
             ))}
           </tbody>
