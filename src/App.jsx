@@ -824,7 +824,16 @@ export default function App() {
                 <Input label="Previsão de pagamento" type="date" value={viagemForm.previsaoPagamento} onChange={(v) => setViagemForm({ ...viagemForm, previsaoPagamento: v })} />
                 <Select label="Status" value={viagemForm.status} onChange={(v) => setViagemForm({ ...viagemForm, status: v })} options={["Programada", "Em andamento", "Finalizada"]} />
               </div>
-              <button onClick={salvarViagem} className="mt-4 bg-red-600 hover:bg-red-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2"><Save size={18} /> {viagemEditandoId ? "Salvar alterações" : "Salvar viagem"}</button>\n              {viagemEditandoId && <button onClick={cancelarEdicaoViagem} className="mt-4 ml-2 bg-zinc-800 hover:bg-zinc-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2"><X size={18} /> Cancelar edição</button>
+              <div className="flex flex-wrap gap-2 mt-4">
+                <button onClick={salvarViagem} className="bg-red-600 hover:bg-red-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2">
+                  <Save size={18} /> {viagemEditandoId ? "Salvar alterações" : "Salvar viagem"}
+                </button>
+                {viagemEditandoId && (
+                  <button onClick={cancelarEdicaoViagem} className="bg-zinc-800 hover:bg-zinc-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2">
+                    <X size={18} /> Cancelar edição
+                  </button>
+                )}
+              </div>
             </section>
 
             <ListaViagens viagens={viagens} apagarViagem={(id) => setViagens(viagens.filter(v => v.id !== id))} editarViagem={editarViagem} />
@@ -1029,7 +1038,12 @@ function ListaViagens({ viagens, apagarViagem, editarViagem }) {
                 <td>{v.destino}</td>
                 <td>{moeda(v.frete)}</td>
                 <td>{v.status}</td>
-                <td><button onClick={() => apagarViagem(v.id)} className="text-red-400"><Trash2 size={18} /></button></td>
+                <td>
+                  <div className="flex gap-2">
+                    <button onClick={() => editarViagem(v)} className="text-zinc-200"><Pencil size={18} /></button>
+                    <button onClick={() => apagarViagem(v.id)} className="text-red-400"><Trash2 size={18} /></button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
