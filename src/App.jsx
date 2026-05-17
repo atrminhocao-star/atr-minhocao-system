@@ -4,13 +4,19 @@ import { Truck, Route, Wallet, Fuel, Plus, Trash2, Save, LogOut, User, Lock, Dro
 const CHAVE_PRINCIPAL = "atr-minhocao-dados";
 const CHAVES_ANTIGAS = ["atr-minhocao-v4", "atr-minhocao-v3", "atr-minhocao-v2"];
 
-const moeda = (valor) =>
-  Number(valor || 0).toLocaleString("pt-BR", {
+const moeda = (valor) => {
+  const n = numero(valor);
+  return n.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
+};
 
-const numero = (valor) => Number(String(valor || "0").replace(",", "."));
+const numero = (valor) => {
+  if (valor === null || valor === undefined || valor === "") return 0;
+  const convertido = Number(String(valor).replace(",", "."));
+  return Number.isNaN(convertido) ? 0 : convertido;
+};
 
 const formatarData = (data) => {
   if (!data) return "-";
@@ -40,8 +46,8 @@ const dadosIniciais = {
     { id: crypto.randomUUID(), nome: "Cliente exemplo", contato: "", telefone: "", cidade: "Criciúma/SC" },
   ],
   materiais: [
-    { id: crypto.randomUUID(), nome: "Brita", valor: "0" },
-    { id: crypto.randomUUID(), nome: "Areia", valor: "0" },
+    { id: crypto.randomUUID(), nome: "Brita", origem: "", destino: "", valor: "0" },
+    { id: crypto.randomUUID(), nome: "Areia", origem: "", destino: "", valor: "0" },
   ],
   caminhoes: [
     { id: crypto.randomUUID(), placa: "ATR-0001", modelo: "Scania Basculante", motorista: "Motorista 1" },
@@ -85,11 +91,12 @@ export default function App() {
   const [filtros, setFiltros] = useState({ cliente: "", caminhao: "" });
 
   const [usuarioForm, setUsuarioForm] = useState({ nome: "", usuario: "", senha: "", perfil: "Operacional" });
-  const [materialForm, setMaterialForm] = useState({ nome: "", valor: "" });
+  const [materialForm, setMaterialForm] = useState({ nome: "", origem: "", destino: "", valor: "" });
   const [materialEditandoId, setMaterialEditandoId] = useState(null);
   const [clienteForm, setClienteForm] = useState({ nome: "", contato: "", telefone: "", cidade: "" });
   const [clienteEditandoId, setClienteEditandoId] = useState(null);
   const [caminhaoForm, setCaminhaoForm] = useState({ placa: "", modelo: "", motorista: "" });
+  const [caminhaoEditandoId, setCaminhaoEditandoId] = useState(null);
 
   const [viagemForm, setViagemForm] = useState({
     data: "",
@@ -288,9 +295,48 @@ export default function App() {
     setClienteForm({ nome: "", contato: "", telefone: "", cidade: "" });
   };
 
-  const adicionarCaminhao = () => {
+  const salvarCaminhao = () => {
     if (!caminhaoForm.placa) return alert("Informe a placa do caminhão.");
-    setCaminhoes([...caminhoes, { id: crypto.randomUUID(), ...caminhaoForm }]);
+
+    if (caminhaoEditandoId) {
+      const caminhaoAntigo = caminhoes.find((c) => c.id === caminhaoEditandoId);
+      const placaAntiga = caminhaoAntigo?.placa;
+
+      setCaminhoes(caminhoes.map((c) =>
+        c.id === caminhaoEditandoId ? { ...c, ...caminhaoForm } : c
+      ));
+
+      if (placaAntiga && placaAntiga !== caminhaoForm.placa) {
+        setViagens(viagens.map((v) =>
+          v.caminhao === placaAntiga ? { ...v, caminhao: caminhaoForm.placa } : v
+        ));
+
+        setDespesas(despesas.map((d) =>
+          d.caminhao === placaAntiga ? { ...d, caminhao: caminhaoForm.placa } : d
+        ));
+      }
+
+      setCaminhaoEditandoId(null);
+    } else {
+      setCaminhoes([...caminhoes, { id: crypto.randomUUID(), ...caminhaoForm }]);
+    }
+
+    setCaminhaoForm({ placa: "", modelo: "", motorista: "" });
+  };
+
+  const editarCaminhao = (caminhao) => {
+    setCaminhaoEditandoId(caminhao.id);
+    setCaminhaoForm({
+      placa: caminhao.placa || "",
+      modelo: caminhao.modelo || "",
+      motorista: caminhao.motorista || "",
+    });
+    setAba("caminhoes");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const cancelarEdicaoCaminhao = () => {
+    setCaminhaoEditandoId(null);
     setCaminhaoForm({ placa: "", modelo: "", motorista: "" });
   };
 
@@ -304,7 +350,7 @@ export default function App() {
 
   const selecionarMaterial = (nomeMaterial) => {
     const material = materiais.find((m) => m.nome === nomeMaterial);
-    const valorUnitario = material ? String(material.valor || "") : viagemForm.valorUnitario;
+    const valorUnitario = material ? String(material.valor ?? material.valorUnitario ?? "") : viagemForm.valorUnitario;
 
     setViagemForm({
       ...viagemForm,
@@ -340,13 +386,15 @@ export default function App() {
       setMateriais([...materiais, { id: crypto.randomUUID(), ...materialForm }]);
     }
 
-    setMaterialForm({ nome: "", valor: "" });
+    setMaterialForm({ nome: "", origem: "", destino: "", valor: "" });
   };
 
   const editarMaterial = (material) => {
     setMaterialEditandoId(material.id);
     setMaterialForm({
       nome: material.nome || "",
+      origem: material.origem || "",
+      destino: material.destino || "",
       valor: material.valor || "",
     });
     setAba("materiais");
@@ -354,7 +402,7 @@ export default function App() {
 
   const cancelarEdicaoMaterial = () => {
     setMaterialEditandoId(null);
-    setMaterialForm({ nome: "", valor: "" });
+    setMaterialForm({ nome: "", origem: "", destino: "", valor: "" });
   };
 
   const adicionarViagem = () => {
@@ -599,6 +647,18 @@ export default function App() {
               />
 
               <Input
+                label="Origem padrão"
+                value={materialForm.origem}
+                onChange={(v) => setMaterialForm({ ...materialForm, origem: v })}
+              />
+
+              <Input
+                label="Destino padrão"
+                value={materialForm.destino}
+                onChange={(v) => setMaterialForm({ ...materialForm, destino: v })}
+              />
+
+              <Input
                 label="Valor unitário padrão R$"
                 value={materialForm.valor}
                 onChange={(v) => setMaterialForm({ ...materialForm, valor: v })}
@@ -629,7 +689,9 @@ export default function App() {
                   <div key={m.id} className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 flex justify-between gap-3">
                     <div>
                       <p className="font-black text-lg">{m.nome}</p>
-                      <p className="text-zinc-400">Valor unitário padrão: {moeda(m.valor)}</p>
+                      <p className="text-zinc-400">Origem: {m.origem || "-"}</p>
+                      <p className="text-zinc-400">Destino: {m.destino || "-"}</p>
+                      <p className="text-zinc-400">Valor unitário padrão: {moeda(m.valor ?? m.valorUnitario)}</p>
                     </div>
 
                     <div className="flex gap-3">
@@ -654,11 +716,11 @@ export default function App() {
         {aba === "caminhoes" && (
           <div className="grid md:grid-cols-3 gap-5">
             <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-              <h2 className="text-2xl font-black mb-4">Novo caminhão</h2>
+              <h2 className="text-2xl font-black mb-4">{caminhaoEditandoId ? "Editar caminhão" : "Novo caminhão"}</h2>
               <Input label="Placa" value={caminhaoForm.placa} onChange={(v) => setCaminhaoForm({ ...caminhaoForm, placa: v })} />
               <Input label="Modelo" value={caminhaoForm.modelo} onChange={(v) => setCaminhaoForm({ ...caminhaoForm, modelo: v })} />
               <Input label="Motorista" value={caminhaoForm.motorista} onChange={(v) => setCaminhaoForm({ ...caminhaoForm, motorista: v })} />
-              <button onClick={adicionarCaminhao} className="w-full mt-3 bg-red-600 hover:bg-red-700 rounded-2xl p-3 font-bold flex items-center justify-center gap-2"><Plus size={18} /> Adicionar</button>
+              <button onClick={salvarCaminhao} className="w-full mt-3 bg-red-600 hover:bg-red-700 rounded-2xl p-3 font-bold flex items-center justify-center gap-2"><Save size={18} /> {caminhaoEditandoId ? "Salvar alterações" : "Adicionar"}</button>\n              {caminhaoEditandoId && <button onClick={cancelarEdicaoCaminhao} className="w-full mt-2 bg-zinc-800 hover:bg-zinc-700 rounded-2xl p-3 font-bold flex items-center justify-center gap-2"><X size={18} /> Cancelar edição</button>
             </section>
 
             <section className="md:col-span-2 bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
@@ -671,7 +733,10 @@ export default function App() {
                       <p className="text-zinc-400">{c.modelo}</p>
                       <p className="text-zinc-400">Motorista: {c.motorista}</p>
                     </div>
-                    <button onClick={() => setCaminhoes(caminhoes.filter(item => item.id !== c.id))} className="text-red-400"><Trash2 /></button>
+                    <div className="flex gap-3">
+                      <button onClick={() => editarCaminhao(c)} className="text-zinc-200"><Pencil /></button>
+                      <button onClick={() => setCaminhoes(caminhoes.filter(item => item.id !== c.id))} className="text-red-400"><Trash2 /></button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -683,7 +748,7 @@ export default function App() {
           <div className="space-y-5">
             <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
               <h2 className="text-2xl font-black mb-4">Nova viagem</h2>
-              <p className="text-zinc-400 mb-4">O diesel fica apenas na aba de abastecimentos/despesas por caminhão.</p>
+              <p className="text-zinc-400 mb-4">O diesel fica apenas na aba de abastecimentos/despesas por caminhão. Ao selecionar o material, origem, destino e valor unitário são puxados automaticamente, mas podem ser ajustados se necessário.</p>
               <div className="grid md:grid-cols-4 gap-3">
                 <Input label="Data da viagem" type="date" value={viagemForm.data} onChange={(v) => setViagemForm({ ...viagemForm, data: v })} />
                 <Input label="Número do pedido" value={viagemForm.numeroPedido} onChange={(v) => setViagemForm({ ...viagemForm, numeroPedido: v })} />
