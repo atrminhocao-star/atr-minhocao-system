@@ -19,6 +19,19 @@ const formatarData = (data) => {
   return `${partes[2]}/${partes[1]}/${partes[0]}`;
 };
 
+const normalizarFormaPagamento = (forma) => {
+  if (forma === "Desconto por empresa") return "Desconto em folha";
+  return forma || "-";
+};
+
+const hojeISO = () => new Date().toISOString().slice(0, 10);
+
+const statusConta = (despesa) => {
+  if (despesa.statusPagamento === "Pago" || despesa.dataPagamento) return "Pago";
+  if (despesa.dataVencimento && despesa.dataVencimento < hojeISO()) return "Atrasada";
+  return "Em aberto";
+};
+
 const dadosIniciais = {
   usuarios: [
     { id: "1", nome: "Administrador", usuario: "admin", senha: "1234", perfil: "Administrador" },
@@ -46,6 +59,7 @@ const despesaVazia = {
   formaPagamento: "Pix",
   pagamentoPrazoComo: "",
   dataVencimento: "",
+  dataPagamento: "",
   responsavelPagamento: "",
   descricao: "",
   valor: "",
@@ -106,13 +120,19 @@ export default function App() {
       setClientes(dadosEncontrados.clientes || []);
       setCaminhoes(dadosEncontrados.caminhoes || dadosIniciais.caminhoes);
       setViagens(dadosEncontrados.viagens || []);
-      setDespesas(dadosEncontrados.despesas || []);
+      setDespesas((dadosEncontrados.despesas || []).map((d) => ({
+        ...d,
+        formaPagamento: normalizarFormaPagamento(d.formaPagamento),
+      })));
     } else {
       setUsuarios(dadosIniciais.usuarios);
       setClientes(dadosIniciais.clientes);
       setCaminhoes(dadosIniciais.caminhoes);
       setViagens(dadosIniciais.viagens);
-      setDespesas(dadosIniciais.despesas);
+      setDespesas(dadosIniciais.despesas.map((d) => ({
+        ...d,
+        formaPagamento: normalizarFormaPagamento(d.formaPagamento),
+      })));
     }
 
     if (sessao) setLogado(JSON.parse(sessao));
@@ -134,15 +154,29 @@ export default function App() {
 
   const contasAPagar = useMemo(() => {
     return despesas
-      .filter((d) => d.statusPagamento === "A prazo" || d.statusPagamento === "Pendente")
+      .filter((d) => d.statusPagamento === "A prazo" || d.statusPagamento === "Pendente" || d.statusPagamento === "Pago" || d.dataVencimento || d.dataPagamento)
       .sort((a, b) => String(a.dataVencimento || "9999-12-31").localeCompare(String(b.dataVencimento || "9999-12-31")));
   }, [despesas]);
+
+  const resumoContas = useMemo(() => {
+    const abertas = contasAPagar.filter((d) => statusConta(d) === "Em aberto");
+    const atrasadas = contasAPagar.filter((d) => statusConta(d) === "Atrasada");
+    const pagas = contasAPagar.filter((d) => statusConta(d) === "Pago");
+    return {
+      abertas: abertas.length,
+      atrasadas: atrasadas.length,
+      pagas: pagas.length,
+      valorAberto: abertas.reduce((s, d) => s + numero(d.valor), 0),
+      valorAtrasado: atrasadas.reduce((s, d) => s + numero(d.valor), 0),
+      valorPago: pagas.reduce((s, d) => s + numero(d.valor), 0),
+    };
+  }, [contasAPagar]);
 
   const totais = useMemo(() => {
     const frete = viagensFiltradas.reduce((s, v) => s + numero(v.frete), 0);
     const despesasTotal = despesas.reduce((s, d) => s + numero(d.valor), 0);
     const litros = despesas.reduce((s, d) => s + numero(d.litros), 0);
-    const pendente = contasAPagar.reduce((s, d) => s + numero(d.valor), 0);
+    const pendente = contasAPagar.filter((d) => statusConta(d) !== "Pago").reduce((s, d) => s + numero(d.valor), 0);
     return { frete, despesasTotal, lucro: frete - despesasTotal, litros, pendente };
   }, [viagensFiltradas, despesas, contasAPagar]);
 
@@ -275,6 +309,7 @@ export default function App() {
       formaPagamento: despesa.formaPagamento || "Pix",
       pagamentoPrazoComo: despesa.pagamentoPrazoComo || "",
       dataVencimento: despesa.dataVencimento || "",
+      dataPagamento: despesa.dataPagamento || "",
       responsavelPagamento: despesa.responsavelPagamento || "",
       descricao: despesa.descricao || "",
       valor: despesa.valor || "",
@@ -512,10 +547,15 @@ export default function App() {
                 <Select label="Status do pagamento" value={despesaForm.statusPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, statusPagamento: v })} options={["Pago", "A prazo", "Pendente"]} />
                 <Select label="Forma de pagamento" value={despesaForm.formaPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, formaPagamento: v })} options={["Dinheiro", "Pix", "Cartão", "Boleto", "A prazo", "Desconto em folha", "Outro"]} />
 
+                {despesaForm.statusPagamento === "Pago" ? (
+                  <Input label="Data de pagamento" type="date" value={despesaForm.dataPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, dataPagamento: v })} />
+                ) : null}
+
                 {despesaForm.statusPagamento === "A prazo" || despesaForm.formaPagamento === "A prazo" || despesaForm.formaPagamento === "Desconto em folha" ? (
                   <>
                     <Select label="Empresa/cliente responsável pelo pagamento" value={despesaForm.responsavelPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, responsavelPagamento: v })} options={clientes.map(c => c.nome)} />
                     <Input label="Data de vencimento/previsão" type="date" value={despesaForm.dataVencimento} onChange={(v) => setDespesaForm({ ...despesaForm, dataVencimento: v })} />
+                    <Input label="Data de pagamento" type="date" value={despesaForm.dataPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, dataPagamento: v })} />
                   </>
                 ) : null}
 
@@ -532,12 +572,13 @@ export default function App() {
 
         {aba === "contas" && (
           <div className="space-y-5">
-            <div className="grid md:grid-cols-3 gap-4">
-              <Card titulo="Contas a pagar" valor={contasAPagar.length} icone={CalendarDays} />
-              <Card titulo="Valor total em aberto" valor={moeda(totais.pendente)} icone={Wallet} destaque />
-              <Card titulo="Lançamentos totais" valor={despesas.length} icone={Fuel} />
+            <div className="grid md:grid-cols-4 gap-4">
+              <Card titulo="Em aberto" valor={`${resumoContas.abertas} | ${moeda(resumoContas.valorAberto)}`} icone={CalendarDays} />
+              <Card titulo="Atrasadas" valor={`${resumoContas.atrasadas} | ${moeda(resumoContas.valorAtrasado)}`} icone={Wallet} destaque />
+              <Card titulo="Pagas" valor={`${resumoContas.pagas} | ${moeda(resumoContas.valorPago)}`} icone={Save} />
+              <Card titulo="Total no controle" valor={contasAPagar.length} icone={Fuel} />
             </div>
-            <ListaContas despesas={contasAPagar} editarDespesa={editarDespesa} />
+            <ListaContas despesas={contasAPagar} editarDespesa={editarDespesa} setDespesas={setDespesas} todasDespesas={despesas} />
           </div>
         )}
 
@@ -692,7 +733,7 @@ function ListaDespesas({ despesas, apagarDespesa, editarDespesa }) {
                 <td className="px-4 py-4 whitespace-nowrap">{d.litros ? `${numero(d.litros).toLocaleString("pt-BR")} L` : "-"}</td>
                 <td className="px-4 py-4 whitespace-nowrap">{d.valorLitro ? moeda(numero(d.valorLitro)) : "-"}</td>
                 <td className="px-4 py-4 whitespace-nowrap">{d.kmPainel || "-"}</td>
-                <td className="px-4 py-4 whitespace-nowrap">{d.statusPagamento} / {d.formaPagamento}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{d.statusPagamento} / {normalizarFormaPagamento(d.formaPagamento)}</td>
                 <td className="px-4 py-4 whitespace-nowrap">{d.responsavelPagamento || "-"}</td>
                 <td className="px-4 py-4 whitespace-nowrap">{formatarData(d.dataVencimento)}</td>
                 <td className="px-4 py-4 text-red-400 font-bold whitespace-nowrap">{moeda(d.valor)}</td>
@@ -717,15 +758,29 @@ function ListaDespesas({ despesas, apagarDespesa, editarDespesa }) {
 
 
 
-function ListaContas({ despesas, editarDespesa }) {
+
+function ListaContas({ despesas, editarDespesa, setDespesas, todasDespesas }) {
+  const marcarComoPago = (despesa) => {
+    const dataPagamento = prompt("Informe a data de pagamento no formato AAAA-MM-DD:", hojeISO());
+    if (!dataPagamento) return;
+
+    setDespesas(todasDespesas.map((d) =>
+      d.id === despesa.id
+        ? { ...d, statusPagamento: "Pago", dataPagamento, formaPagamento: normalizarFormaPagamento(d.formaPagamento) }
+        : d
+    ));
+  };
+
   return (
     <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
       <h2 className="text-2xl font-black mb-4">Contas a pagar por data</h2>
       <div className="overflow-auto">
-        <table className="w-full min-w-[1050px] text-left text-sm border-separate border-spacing-y-3">
+        <table className="w-full min-w-[1200px] text-left text-sm border-separate border-spacing-y-3">
           <thead className="text-zinc-400">
             <tr>
+              <th className="px-4 pb-2">Status</th>
               <th className="px-4 pb-2">Vencimento</th>
+              <th className="px-4 pb-2">Data pagamento</th>
               <th className="px-4 pb-2">Data lançamento</th>
               <th className="px-4 pb-2">Empresa/cliente a pagar</th>
               <th className="px-4 pb-2">Caminhão</th>
@@ -736,22 +791,40 @@ function ListaContas({ despesas, editarDespesa }) {
             </tr>
           </thead>
           <tbody>
-            {despesas.map((d) => (
-              <tr key={d.id} className="bg-zinc-950">
-                <td className="px-4 py-4 rounded-l-2xl whitespace-nowrap">{formatarData(d.dataVencimento)}</td>
-                <td className="px-4 py-4 whitespace-nowrap">{formatarData(d.data)}</td>
-                <td className="px-4 py-4 font-bold whitespace-nowrap">{d.responsavelPagamento || "-"}</td>
-                <td className="px-4 py-4 whitespace-nowrap">{d.caminhao || "-"}</td>
-                <td className="px-4 py-4 whitespace-nowrap">{d.tipo}</td>
-                <td className="px-4 py-4 whitespace-nowrap">{d.formaPagamento || "-"}</td>
-                <td className="px-4 py-4 text-red-400 font-bold whitespace-nowrap">{moeda(d.valor)}</td>
-                <td className="px-4 py-4 rounded-r-2xl whitespace-nowrap">
-                  <button onClick={() => editarDespesa(d)} className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 font-bold inline-flex items-center gap-2">
-                    <Pencil size={16} /> Editar
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {despesas.map((d) => {
+              const status = statusConta(d);
+              return (
+                <tr key={d.id} className="bg-zinc-950">
+                  <td className="px-4 py-4 rounded-l-2xl whitespace-nowrap">
+                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${
+                      status === "Pago" ? "bg-green-700" : status === "Atrasada" ? "bg-red-700" : "bg-yellow-700"
+                    }`}>
+                      {status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap">{formatarData(d.dataVencimento)}</td>
+                  <td className="px-4 py-4 whitespace-nowrap">{formatarData(d.dataPagamento)}</td>
+                  <td className="px-4 py-4 whitespace-nowrap">{formatarData(d.data)}</td>
+                  <td className="px-4 py-4 font-bold whitespace-nowrap">{d.responsavelPagamento || "-"}</td>
+                  <td className="px-4 py-4 whitespace-nowrap">{d.caminhao || "-"}</td>
+                  <td className="px-4 py-4 whitespace-nowrap">{d.tipo}</td>
+                  <td className="px-4 py-4 whitespace-nowrap">{normalizarFormaPagamento(d.formaPagamento)}</td>
+                  <td className="px-4 py-4 text-red-400 font-bold whitespace-nowrap">{moeda(d.valor)}</td>
+                  <td className="px-4 py-4 rounded-r-2xl whitespace-nowrap">
+                    <div className="flex gap-2">
+                      {status !== "Pago" && (
+                        <button onClick={() => marcarComoPago(d)} className="bg-green-700 hover:bg-green-800 rounded-xl px-3 py-2 font-bold">
+                          Marcar pago
+                        </button>
+                      )}
+                      <button onClick={() => editarDespesa(d)} className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 font-bold inline-flex items-center gap-2">
+                        <Pencil size={16} /> Editar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
