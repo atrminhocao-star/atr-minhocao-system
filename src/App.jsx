@@ -121,6 +121,15 @@ export default function App() {
     cliente: "",
   });
 
+  const [filtroRelatorio, setFiltroRelatorio] = useState({
+    inicio: "",
+    fim: "",
+    cliente: "",
+    caminhao: "",
+    material: "",
+    status: "",
+  });
+
   const [despesaForm, setDespesaForm] = useState(despesaVazia);
   const [despesaEditandoId, setDespesaEditandoId] = useState(null);
 
@@ -195,6 +204,130 @@ export default function App() {
   const totalFretesAReceber = useMemo(() => {
     return fretesAReceber.reduce((s, v) => s + numero(v.frete), 0);
   }, [fretesAReceber]);
+
+  const viagensRelatorio = useMemo(() => {
+    return viagens
+      .filter((v) => {
+        const okInicio = !filtroRelatorio.inicio || v.data >= filtroRelatorio.inicio;
+        const okFim = !filtroRelatorio.fim || v.data <= filtroRelatorio.fim;
+        const okCliente = !filtroRelatorio.cliente || v.cliente === filtroRelatorio.cliente;
+        const okCaminhao = !filtroRelatorio.caminhao || v.caminhao === filtroRelatorio.caminhao;
+        const okMaterial = !filtroRelatorio.material || v.material === filtroRelatorio.material;
+        const okStatus = !filtroRelatorio.status || v.status === filtroRelatorio.status;
+        return okInicio && okFim && okCliente && okCaminhao && okMaterial && okStatus;
+      })
+      .sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")));
+  }, [viagens, filtroRelatorio]);
+
+  const totalRelatorioViagens = useMemo(() => {
+    return viagensRelatorio.reduce((s, v) => s + numero(v.frete), 0);
+  }, [viagensRelatorio]);
+
+  const gerarPdfRelatorioViagens = () => {
+    const linhas = viagensRelatorio.map((v) => `
+      <tr>
+        <td>${formatarData(v.data)}</td>
+        <td>${v.numeroPedido || "-"}</td>
+        <td>${v.cliente || "-"}</td>
+        <td>${v.caminhao || "-"}</td>
+        <td>${v.material || "-"}</td>
+        <td>${v.origem || "-"}</td>
+        <td>${v.destino || "-"}</td>
+        <td>${v.quantidade ? `${v.quantidade} ${v.unidade || ""}` : "-"}</td>
+        <td>${moeda(v.valorUnitario)}</td>
+        <td>${moeda(v.frete)}</td>
+        <td>${formatarData(v.previsaoPagamento)}</td>
+        <td>${v.status || "-"}</td>
+      </tr>
+    `).join("");
+
+    const filtrosAplicados = [
+      filtroRelatorio.inicio ? `Data inicial: ${formatarData(filtroRelatorio.inicio)}` : null,
+      filtroRelatorio.fim ? `Data final: ${formatarData(filtroRelatorio.fim)}` : null,
+      filtroRelatorio.cliente ? `Cliente: ${filtroRelatorio.cliente}` : null,
+      filtroRelatorio.caminhao ? `Caminhão: ${filtroRelatorio.caminhao}` : null,
+      filtroRelatorio.material ? `Material: ${filtroRelatorio.material}` : null,
+      filtroRelatorio.status ? `Status: ${filtroRelatorio.status}` : null,
+    ].filter(Boolean).join(" | ") || "Sem filtros aplicados";
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Relatório de Viagens - ATR MINHOCÃO</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #111; padding: 24px; }
+            h1 { color: #d71920; margin-bottom: 4px; }
+            h2 { margin-top: 0; font-size: 16px; color: #333; font-weight: normal; }
+            .info { margin: 18px 0; font-size: 12px; color: #444; }
+            .resumo { display: flex; gap: 16px; margin: 18px 0; }
+            .card { border: 1px solid #ddd; border-radius: 8px; padding: 10px 14px; }
+            .card strong { display: block; font-size: 18px; margin-top: 4px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 10px; }
+            th { background: #d71920; color: white; text-align: left; padding: 7px; }
+            td { border-bottom: 1px solid #ddd; padding: 7px; vertical-align: top; }
+            tfoot td { font-weight: bold; border-top: 2px solid #111; }
+            @media print {
+              button { display: none; }
+              body { padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <button onclick="window.print()" style="padding:10px 16px;margin-bottom:20px;background:#d71920;color:white;border:0;border-radius:8px;font-weight:bold;cursor:pointer;">
+            Salvar/imprimir PDF
+          </button>
+
+          <h1>ATR MINHOCÃO</h1>
+          <h2>Relatório de viagens realizadas</h2>
+
+          <div class="info">
+            <strong>Filtros:</strong> ${filtrosAplicados}<br/>
+            <strong>Emitido em:</strong> ${new Date().toLocaleString("pt-BR")}
+          </div>
+
+          <div class="resumo">
+            <div class="card">Viagens encontradas<strong>${viagensRelatorio.length}</strong></div>
+            <div class="card">Total de fretes<strong>${moeda(totalRelatorioViagens)}</strong></div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Pedido</th>
+                <th>Cliente</th>
+                <th>Caminhão</th>
+                <th>Material</th>
+                <th>Origem</th>
+                <th>Destino</th>
+                <th>Quantidade</th>
+                <th>Valor unit.</th>
+                <th>Frete</th>
+                <th>Prev. pag.</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${linhas || `<tr><td colspan="12">Nenhuma viagem encontrada para os filtros selecionados.</td></tr>`}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="9">TOTAL</td>
+                <td>${moeda(totalRelatorioViagens)}</td>
+                <td colspan="2"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </body>
+      </html>
+    `;
+
+    const janela = window.open("", "_blank");
+    janela.document.write(html);
+    janela.document.close();
+    janela.focus();
+  };
 
   const contasAPagar = useMemo(() => {
     return despesas
@@ -560,6 +693,7 @@ export default function App() {
     { id: "caminhoes", nome: "Caminhões" },
     { id: "viagens", nome: "Viagens" },
     { id: "recebimentos", nome: "Fretes a receber" },
+    { id: "relatorios", nome: "Relatórios" },
     { id: "despesas", nome: "Abastecimentos/Despesas" },
     { id: "contas", nome: "Contas a pagar" },
     { id: "usuarios", nome: "Usuários" },
@@ -863,6 +997,47 @@ export default function App() {
             </div>
 
             <ListaViagens viagens={fretesAReceber} apagarViagem={(id) => setViagens(viagens.filter(v => v.id !== id))} editarViagem={editarViagem} />
+          </div>
+        )}
+
+
+        {aba === "relatorios" && (
+          <div className="space-y-5">
+            <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Filter className="text-red-500" />
+                <h2 className="text-2xl font-black">Relatório de viagens</h2>
+              </div>
+
+              <p className="text-zinc-400 mb-4">
+                Filtre as viagens por data, empresa, caminhão, material ou status e emita um relatório em PDF.
+              </p>
+
+              <div className="grid md:grid-cols-4 gap-3">
+                <Input label="Data inicial" type="date" value={filtroRelatorio.inicio} onChange={(v) => setFiltroRelatorio({ ...filtroRelatorio, inicio: v })} />
+                <Input label="Data final" type="date" value={filtroRelatorio.fim} onChange={(v) => setFiltroRelatorio({ ...filtroRelatorio, fim: v })} />
+                <Select label="Empresa/cliente" value={filtroRelatorio.cliente} onChange={(v) => setFiltroRelatorio({ ...filtroRelatorio, cliente: v })} options={clientes.map(c => c.nome)} />
+                <Select label="Caminhão" value={filtroRelatorio.caminhao} onChange={(v) => setFiltroRelatorio({ ...filtroRelatorio, caminhao: v })} options={caminhoes.map(c => c.placa)} />
+                <Select label="Material" value={filtroRelatorio.material} onChange={(v) => setFiltroRelatorio({ ...filtroRelatorio, material: v })} options={materiais.map(m => m.nome)} />
+                <Select label="Status" value={filtroRelatorio.status} onChange={(v) => setFiltroRelatorio({ ...filtroRelatorio, status: v })} options={["Programada", "Em andamento", "Finalizada"]} />
+
+                <button onClick={() => setFiltroRelatorio({ inicio: "", fim: "", cliente: "", caminhao: "", material: "", status: "" })} className="mt-6 bg-zinc-800 hover:bg-zinc-700 rounded-2xl p-3 font-bold">
+                  Limpar filtros
+                </button>
+
+                <button onClick={gerarPdfRelatorioViagens} className="mt-6 bg-red-600 hover:bg-red-700 rounded-2xl p-3 font-bold">
+                  Emitir PDF
+                </button>
+              </div>
+            </section>
+
+            <div className="grid md:grid-cols-3 gap-4">
+              <Card titulo="Viagens encontradas" valor={viagensRelatorio.length} icone={Route} />
+              <Card titulo="Total de fretes" valor={moeda(totalRelatorioViagens)} icone={Wallet} destaque />
+              <Card titulo="Relatório" valor="PDF" icone={Filter} />
+            </div>
+
+            <ListaViagens viagens={viagensRelatorio} apagarViagem={(id) => setViagens(viagens.filter(v => v.id !== id))} editarViagem={editarViagem} />
           </div>
         )}
 
