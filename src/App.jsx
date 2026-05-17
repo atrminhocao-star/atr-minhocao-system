@@ -555,7 +555,7 @@ export default function App() {
           viagemId: viagem.id,
           data: dataPagamento,
           valor: numero(viagem.frete),
-          descricao: `Frete recebido - Pedido ${viagem.numeroPedido || "-"}`,
+          descricao: `Frete recebido (${formatarData(viagem.data)}) - Pedido ${viagem.numeroPedido || "-"}`,
           cliente: viagem.cliente || "",
           caminhao: viagem.caminhao || "",
           origem: "Frete",
@@ -651,19 +651,26 @@ export default function App() {
         <head>
           <title>Fluxo de caixa - ATR MINHOCÃO</title>
           <style>
-            body { font-family: Arial; padding: 20px; }
-            table { width:100%; border-collapse: collapse; font-size: 12px; }
-            th { background:#d71920; color:white; padding:8px; text-align:left; }
-            td { border-bottom:1px solid #ccc; padding:8px; }
+            body { font-family: Arial, sans-serif; padding: 20px; color: #111; }
+            h1 { color: #d71920; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 16px; }
+            th { background: #d71920; color: white; padding: 8px; text-align: left; }
+            td { border-bottom: 1px solid #ddd; padding: 8px; }
+            .resumo { margin: 12px 0; }
+            @media print { button { display: none; } }
           </style>
         </head>
         <body>
-          <button onclick="window.print()" style="padding:10px 16px;margin-bottom:20px;background:#d71920;color:white;border:0;border-radius:8px;font-weight:bold;">
+          <button onclick="window.print()" style="padding:10px 16px;background:#d71920;color:white;border:0;border-radius:8px;font-weight:bold;">
             Salvar PDF
           </button>
-
-          <h1>ATR MINHOCÃO - Fluxo de caixa</h1>
-
+          <h1>ATR MINHOCÃO</h1>
+          <h2>Fluxo de caixa</h2>
+          <div class="resumo">
+            <strong>Entradas:</strong> ${moeda(resumoFluxo.entradas)} |
+            <strong>Saídas:</strong> ${moeda(resumoFluxo.saidas)} |
+            <strong>Saldo:</strong> ${moeda(resumoFluxo.saldo)}
+          </div>
           <table>
             <thead>
               <tr>
@@ -684,6 +691,7 @@ export default function App() {
     const janela = window.open("", "_blank");
     janela.document.write(html);
     janela.document.close();
+    janela.focus();
   };
 
   const contasAPagar = useMemo(() => {
@@ -1396,7 +1404,7 @@ export default function App() {
               <Card titulo="Clientes filtrados" valor={filtroRecebimentos.cliente || "Todos"} icone={Building2} />
             </div>
 
-            <ListaViagens viagens={fretesAReceber} apagarViagem={apagarViagemComConfirmacao} editarViagem={editarViagem} marcarFretePago={marcarFretePago} desfazerPagamentoFrete={desfazerPagamentoFrete} />
+            <ListaViagens viagens={fretesAReceber} apagarViagem={apagarViagemComConfirmacao} editarViagem={editarViagem} marcarFretePago={marcarFretePago} />
           </div>
         )}
 
@@ -1478,6 +1486,12 @@ export default function App() {
                   <Save size={18} /> Salvar saída
                 </button>
               </section>
+            </div>
+
+            <div className="flex justify-end">
+              <button onClick={emitirPdfFluxoCaixa} className="bg-red-600 hover:bg-red-700 rounded-2xl px-6 py-3 font-bold">
+                Emitir PDF do fluxo
+              </button>
             </div>
 
             <ListaFluxoCaixa fluxo={fluxoCaixa} apagarEntrada={(id) => setEntradasCaixa(entradasCaixa.filter(e => e.id !== id))} apagarSaida={(id) => setSaidasManuais(saidasManuais.filter(s => s.id !== id))} />
@@ -1685,14 +1699,14 @@ function ListaContasReceberFixas({ contas, marcarPago, apagarConta }) {
           <tbody>
             {contasOrdenadas.map((c) => (
               <tr key={c.id} className="bg-zinc-950">
-                <td className="px-2 py-2 rounded-l-2xl whitespace-nowrap">{formatarData(c.dataVencimento)}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{c.cliente || "-"}</td>
-                <td className="px-2 py-2">{c.descricao || "-"}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{c.parcela}/{c.totalParcelas}</td>
-                <td className="px-2 py-2 text-green-400 font-bold whitespace-nowrap">{moeda(c.valor)}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{c.status}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{formatarData(c.dataPagamento)}</td>
-                <td className="px-2 py-2 rounded-r-2xl whitespace-nowrap">
+                <td className="px-4 py-4 rounded-l-2xl whitespace-nowrap">{formatarData(c.dataVencimento)}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{c.cliente || "-"}</td>
+                <td className="px-4 py-4">{c.descricao || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{c.parcela}/{c.totalParcelas}</td>
+                <td className="px-4 py-4 text-green-400 font-bold whitespace-nowrap">{moeda(c.valor)}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{c.status}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{formatarData(c.dataPagamento)}</td>
+                <td className="px-4 py-4 rounded-r-2xl whitespace-nowrap">
                   <div className="flex gap-2">
                     {c.status !== "Pago" && (
                       <button onClick={() => marcarPago(c)} className="bg-green-700 hover:bg-green-800 rounded-xl px-3 py-2 font-bold">
@@ -1724,7 +1738,7 @@ function ListaContasReceberFixas({ contas, marcarPago, apagarConta }) {
 function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida }) {
   return (
     <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-      <div className="flex items-center justify-between mb-4"><h2 className="text-2xl font-black">Movimentações do fluxo de caixa</h2><button onClick={emitirPdfFluxoCaixa} className="bg-red-600 hover:bg-red-700 rounded-2xl px-4 py-2 font-bold">Emitir PDF</button></div>
+      <h2 className="text-2xl font-black mb-4">Movimentações do fluxo de caixa</h2>
       <div className="overflow-auto">
         <table className="w-full min-w-[1000px] text-left text-sm border-separate border-spacing-y-3">
           <thead className="text-zinc-400">
@@ -1742,20 +1756,20 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida }) {
           <tbody>
             {fluxo.map((item) => (
               <tr key={`${item.tipo}-${item.id}`} className="bg-zinc-950">
-                <td className="px-2 py-2 rounded-l-2xl whitespace-nowrap">{formatarData(item.data)}</td>
-                <td className="px-2 py-2 whitespace-nowrap">
+                <td className="px-4 py-4 rounded-l-2xl whitespace-nowrap">{formatarData(item.data)}</td>
+                <td className="px-4 py-4 whitespace-nowrap">
                   <span className={`rounded-full px-3 py-1 text-xs font-bold ${item.tipo === "Entrada" ? "bg-green-700" : "bg-red-700"}`}>
                     {item.tipo}
                   </span>
                 </td>
-                <td className={`px-2 py-2 font-bold whitespace-nowrap ${item.tipo === "Entrada" ? "text-green-400" : "text-red-400"}`}>
+                <td className={`px-4 py-4 font-bold whitespace-nowrap ${item.tipo === "Entrada" ? "text-green-400" : "text-red-400"}`}>
                   {moeda(item.valor)}
                 </td>
-                <td className="px-2 py-2 whitespace-nowrap">{item.cliente || "-"}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{item.caminhao || "-"}</td>
-                <td className="px-2 py-2">{item.descricao || "-"}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{item.origem || "-"}</td>
-                <td className="px-2 py-2 rounded-r-2xl whitespace-nowrap">
+                <td className="px-4 py-4 whitespace-nowrap">{item.cliente || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{item.caminhao || "-"}</td>
+                <td className="px-4 py-4">{item.descricao || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{item.origem || "-"}</td>
+                <td className="px-4 py-4 rounded-r-2xl whitespace-nowrap">
                   {item.origem === "Manual" ? (
                     <button
                       onClick={() => item.tipo === "Entrada" ? apagarEntrada(item.id) : apagarSaida(item.id)}
@@ -1782,7 +1796,7 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida }) {
   );
 }
 
-function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, desfazerPagamentoFrete }) {
+function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago }) {
   const [ordenacao, setOrdenacao] = React.useState({
     campo: "data",
     direcao: "desc",
@@ -1832,7 +1846,7 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
         Clique em Data, Últimas cadastradas, Pedido, Cliente, Caminhão, Frete ou Status para ordenar.
       </p>
       <div className="overflow-auto">
-        <table className="w-full min-w-[950px] text-left text-xs border-separate border-spacing-y-2">
+        <table className="w-full min-w-[1300px] text-left text-sm border-separate border-spacing-y-3">
           <thead className="text-zinc-400">
             <tr>
               <th className="px-4 pb-2 cursor-pointer hover:text-white" onClick={() => alternarOrdenacao("data")}>Data {seta("data")}</th>
@@ -1853,19 +1867,19 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
           <tbody>
             {viagensOrdenadas.map((v) => (
               <tr key={v.id} className="bg-zinc-950">
-                <td className="px-2 py-2 rounded-l-2xl whitespace-nowrap">{formatarData(v.data)}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{v.createdAt ? formatarData(String(v.createdAt).slice(0,10)) : "-"}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{v.cliente || "-"}</td>
-                <td className="px-2 py-2 font-bold whitespace-nowrap">{v.numeroPedido || "-"}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{v.caminhao || "-"}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{v.material || "-"}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{v.origem || "-"}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{v.destino || "-"}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{v.quantidade ? `${v.quantidade} ${v.unidade || ""}` : "-"}</td>
-                <td className="px-2 py-2 text-red-400 font-bold whitespace-nowrap">{moeda(v.frete)}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{formatarData(v.previsaoPagamento)}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{v.status || "-"}</td>
-                <td className="px-2 py-2 rounded-r-2xl whitespace-nowrap">
+                <td className="px-4 py-4 rounded-l-2xl whitespace-nowrap">{formatarData(v.data)}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{v.createdAt ? formatarData(String(v.createdAt).slice(0,10)) : "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{v.cliente || "-"}</td>
+                <td className="px-4 py-4 font-bold whitespace-nowrap">{v.numeroPedido || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{v.caminhao || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{v.material || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{v.origem || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{v.destino || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{v.quantidade ? `${v.quantidade} ${v.unidade || ""}` : "-"}</td>
+                <td className="px-4 py-4 text-red-400 font-bold whitespace-nowrap">{moeda(v.frete)}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{formatarData(v.previsaoPagamento)}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{v.status || "-"}</td>
+                <td className="px-4 py-4 rounded-r-2xl whitespace-nowrap">
                   <div className="flex gap-2">
                     {marcarFretePago && !v.fretePago && (
                       <button onClick={() => marcarFretePago(v)} className="bg-green-700 hover:bg-green-800 rounded-xl px-3 py-2 font-bold inline-flex items-center gap-2">
@@ -1873,14 +1887,9 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
                       </button>
                     )}
                     {marcarFretePago && v.fretePago && (
-                      <div className="flex gap-2">
-                        <button onClick={() => marcarFretePago(v)} className="bg-green-900 hover:bg-green-800 rounded-xl px-3 py-2 font-bold text-green-200">
-                          Pago {formatarData(v.dataPagamentoFrete)}
-                        </button>
-                        <button onClick={() => desfazerPagamentoFrete(v)} className="bg-yellow-700 hover:bg-yellow-800 rounded-xl px-3 py-2 font-bold">
-                          Desfazer
-                        </button>
-                      </div>
+                      <span className="bg-green-900 rounded-xl px-3 py-2 font-bold text-green-200">
+                        Pago {formatarData(v.dataPagamentoFrete)}
+                      </span>
                     )}
                     {editarViagem && (
                       <button onClick={() => editarViagem(v)} className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 font-bold inline-flex items-center gap-2">
@@ -1934,18 +1943,18 @@ function ListaDespesas({ despesas, apagarDespesa, editarDespesa }) {
           <tbody>
             {despesas.map((d) => (
               <tr key={d.id} className="bg-zinc-950">
-                <td className="px-2 py-2 rounded-l-2xl whitespace-nowrap">{formatarData(d.data)}</td>
-                <td className="px-2 py-2 font-bold whitespace-nowrap">{d.caminhao || "-"}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{d.tipo}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{d.postoEmpresa || "-"}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{d.litros ? `${numero(d.litros).toLocaleString("pt-BR")} L` : "-"}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{d.valorLitro ? moeda(numero(d.valorLitro)) : "-"}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{d.kmPainel || "-"}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{d.statusPagamento} / {normalizarFormaPagamento(d.formaPagamento)}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{d.responsavelPagamento || "-"}</td>
-                <td className="px-2 py-2 whitespace-nowrap">{formatarData(d.dataVencimento)}</td>
-                <td className="px-2 py-2 text-red-400 font-bold whitespace-nowrap">{moeda(d.valor)}</td>
-                <td className="px-2 py-2 rounded-r-2xl whitespace-nowrap">
+                <td className="px-4 py-4 rounded-l-2xl whitespace-nowrap">{formatarData(d.data)}</td>
+                <td className="px-4 py-4 font-bold whitespace-nowrap">{d.caminhao || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{d.tipo}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{d.postoEmpresa || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{d.litros ? `${numero(d.litros).toLocaleString("pt-BR")} L` : "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{d.valorLitro ? moeda(numero(d.valorLitro)) : "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{d.kmPainel || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{d.statusPagamento} / {normalizarFormaPagamento(d.formaPagamento)}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{d.responsavelPagamento || "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap">{formatarData(d.dataVencimento)}</td>
+                <td className="px-4 py-4 text-red-400 font-bold whitespace-nowrap">{moeda(d.valor)}</td>
+                <td className="px-4 py-4 rounded-r-2xl whitespace-nowrap">
                   <div className="flex gap-3">
                     <button onClick={() => editarDespesa(d)} className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 font-bold inline-flex items-center gap-2">
                       <Pencil size={16} /> Editar
@@ -2003,22 +2012,22 @@ function ListaContas({ despesas, editarDespesa, setDespesas, todasDespesas }) {
               const status = statusConta(d);
               return (
                 <tr key={d.id} className="bg-zinc-950">
-                  <td className="px-2 py-2 rounded-l-2xl whitespace-nowrap">
+                  <td className="px-4 py-4 rounded-l-2xl whitespace-nowrap">
                     <span className={`rounded-full px-3 py-1 text-xs font-bold ${
                       status === "Pago" ? "bg-green-700" : status === "Atrasada" ? "bg-red-700" : "bg-yellow-700"
                     }`}>
                       {status}
                     </span>
                   </td>
-                  <td className="px-2 py-2 whitespace-nowrap">{formatarData(d.dataVencimento)}</td>
-                  <td className="px-2 py-2 whitespace-nowrap">{formatarData(d.dataPagamento)}</td>
-                  <td className="px-2 py-2 whitespace-nowrap">{formatarData(d.data)}</td>
-                  <td className="px-2 py-2 font-bold whitespace-nowrap">{d.responsavelPagamento || "-"}</td>
-                  <td className="px-2 py-2 whitespace-nowrap">{d.caminhao || "-"}</td>
-                  <td className="px-2 py-2 whitespace-nowrap">{d.tipo}</td>
-                  <td className="px-2 py-2 whitespace-nowrap">{normalizarFormaPagamento(d.formaPagamento)}</td>
-                  <td className="px-2 py-2 text-red-400 font-bold whitespace-nowrap">{moeda(d.valor)}</td>
-                  <td className="px-2 py-2 rounded-r-2xl whitespace-nowrap">
+                  <td className="px-4 py-4 whitespace-nowrap">{formatarData(d.dataVencimento)}</td>
+                  <td className="px-4 py-4 whitespace-nowrap">{formatarData(d.dataPagamento)}</td>
+                  <td className="px-4 py-4 whitespace-nowrap">{formatarData(d.data)}</td>
+                  <td className="px-4 py-4 font-bold whitespace-nowrap">{d.responsavelPagamento || "-"}</td>
+                  <td className="px-4 py-4 whitespace-nowrap">{d.caminhao || "-"}</td>
+                  <td className="px-4 py-4 whitespace-nowrap">{d.tipo}</td>
+                  <td className="px-4 py-4 whitespace-nowrap">{normalizarFormaPagamento(d.formaPagamento)}</td>
+                  <td className="px-4 py-4 text-red-400 font-bold whitespace-nowrap">{moeda(d.valor)}</td>
+                  <td className="px-4 py-4 rounded-r-2xl whitespace-nowrap">
                     <div className="flex gap-2">
                       {status !== "Pago" && (
                         <button onClick={() => marcarComoPago(d)} className="bg-green-700 hover:bg-green-800 rounded-xl px-3 py-2 font-bold">
