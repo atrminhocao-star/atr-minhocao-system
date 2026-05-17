@@ -86,12 +86,23 @@ export default function App() {
 
   const [viagemForm, setViagemForm] = useState({
     data: "",
+    numeroPedido: "",
     caminhao: "",
     origem: "",
     destino: "",
     cliente: "",
+    quantidade: "",
+    unidade: "Toneladas",
+    valorUnitario: "",
     frete: "",
+    previsaoPagamento: "",
     status: "Programada",
+  });
+
+  const [filtroRecebimentos, setFiltroRecebimentos] = useState({
+    inicio: "",
+    fim: "",
+    cliente: "",
   });
 
   const [despesaForm, setDespesaForm] = useState(despesaVazia);
@@ -151,6 +162,21 @@ export default function App() {
       return okCliente && okCaminhao;
     });
   }, [viagens, filtros]);
+
+  const fretesAReceber = useMemo(() => {
+    return viagens
+      .filter((v) => {
+        const okInicio = !filtroRecebimentos.inicio || v.previsaoPagamento >= filtroRecebimentos.inicio;
+        const okFim = !filtroRecebimentos.fim || v.previsaoPagamento <= filtroRecebimentos.fim;
+        const okCliente = !filtroRecebimentos.cliente || v.cliente === filtroRecebimentos.cliente;
+        return okInicio && okFim && okCliente;
+      })
+      .sort((a, b) => String(a.previsaoPagamento || "9999-12-31").localeCompare(String(b.previsaoPagamento || "9999-12-31")));
+  }, [viagens, filtroRecebimentos]);
+
+  const totalFretesAReceber = useMemo(() => {
+    return fretesAReceber.reduce((s, v) => s + numero(v.frete), 0);
+  }, [fretesAReceber]);
 
   const contasAPagar = useMemo(() => {
     return despesas
@@ -263,7 +289,20 @@ export default function App() {
       return alert("Informe cliente, origem, destino e frete.");
     }
     setViagens([...viagens, { id: crypto.randomUUID(), ...viagemForm }]);
-    setViagemForm({ data: "", caminhao: "", origem: "", destino: "", cliente: "", frete: "", status: "Programada" });
+    setViagemForm({
+      data: "",
+      numeroPedido: "",
+      caminhao: "",
+      origem: "",
+      destino: "",
+      cliente: "",
+      quantidade: "",
+      unidade: "Toneladas",
+      valorUnitario: "",
+      frete: "",
+      previsaoPagamento: "",
+      status: "Programada",
+    });
   };
 
   const salvarDespesa = () => {
@@ -344,6 +383,7 @@ export default function App() {
     { id: "clientes", nome: "Clientes/Empresas" },
     { id: "caminhoes", nome: "Caminhões" },
     { id: "viagens", nome: "Viagens" },
+    { id: "recebimentos", nome: "Fretes a receber" },
     { id: "despesas", nome: "Abastecimentos/Despesas" },
     { id: "contas", nome: "Contas a pagar" },
     { id: "usuarios", nome: "Usuários" },
@@ -503,18 +543,49 @@ export default function App() {
               <h2 className="text-2xl font-black mb-4">Nova viagem</h2>
               <p className="text-zinc-400 mb-4">O diesel fica apenas na aba de abastecimentos/despesas por caminhão.</p>
               <div className="grid md:grid-cols-4 gap-3">
-                <Input label="Data" type="date" value={viagemForm.data} onChange={(v) => setViagemForm({ ...viagemForm, data: v })} />
+                <Input label="Data da viagem" type="date" value={viagemForm.data} onChange={(v) => setViagemForm({ ...viagemForm, data: v })} />
+                <Input label="Número do pedido" value={viagemForm.numeroPedido} onChange={(v) => setViagemForm({ ...viagemForm, numeroPedido: v })} />
                 <Select label="Cliente" value={viagemForm.cliente} onChange={(v) => setViagemForm({ ...viagemForm, cliente: v })} options={clientes.map(c => c.nome)} />
                 <Select label="Caminhão" value={viagemForm.caminhao} onChange={(v) => setViagemForm({ ...viagemForm, caminhao: v })} options={caminhoes.map(c => c.placa)} />
                 <Input label="Origem" value={viagemForm.origem} onChange={(v) => setViagemForm({ ...viagemForm, origem: v })} />
                 <Input label="Destino" value={viagemForm.destino} onChange={(v) => setViagemForm({ ...viagemForm, destino: v })} />
-                <Input label="Frete R$" value={viagemForm.frete} onChange={(v) => setViagemForm({ ...viagemForm, frete: v })} />
+                <Input label="Quantidade" value={viagemForm.quantidade} onChange={(v) => setViagemForm({ ...viagemForm, quantidade: v })} />
+                <Select label="Unidade" value={viagemForm.unidade} onChange={(v) => setViagemForm({ ...viagemForm, unidade: v })} options={["Toneladas", "Quilos", "Viagem", "Carga", "Outro"]} />
+                <Input label="Valor unitário R$" value={viagemForm.valorUnitario} onChange={(v) => setViagemForm({ ...viagemForm, valorUnitario: v })} />
+                <Input label="Frete total a receber R$" value={viagemForm.frete} onChange={(v) => setViagemForm({ ...viagemForm, frete: v })} />
+                <Input label="Previsão de pagamento" type="date" value={viagemForm.previsaoPagamento} onChange={(v) => setViagemForm({ ...viagemForm, previsaoPagamento: v })} />
                 <Select label="Status" value={viagemForm.status} onChange={(v) => setViagemForm({ ...viagemForm, status: v })} options={["Programada", "Em andamento", "Finalizada"]} />
               </div>
               <button onClick={adicionarViagem} className="mt-4 bg-red-600 hover:bg-red-700 rounded-2xl px-6 py-3 font-bold flex items-center gap-2"><Save size={18} /> Salvar viagem</button>
             </section>
 
             <ListaViagens viagens={viagens} apagarViagem={(id) => setViagens(viagens.filter(v => v.id !== id))} />
+          </div>
+        )}
+
+
+        {aba === "recebimentos" && (
+          <div className="space-y-5">
+            <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Filter className="text-red-500" />
+                <h2 className="text-2xl font-black">Filtros de fretes a receber</h2>
+              </div>
+              <div className="grid md:grid-cols-4 gap-3">
+                <Input label="Data inicial" type="date" value={filtroRecebimentos.inicio} onChange={(v) => setFiltroRecebimentos({ ...filtroRecebimentos, inicio: v })} />
+                <Input label="Data final" type="date" value={filtroRecebimentos.fim} onChange={(v) => setFiltroRecebimentos({ ...filtroRecebimentos, fim: v })} />
+                <Select label="Cliente" value={filtroRecebimentos.cliente} onChange={(v) => setFiltroRecebimentos({ ...filtroRecebimentos, cliente: v })} options={clientes.map(c => c.nome)} />
+                <button onClick={() => setFiltroRecebimentos({ inicio: "", fim: "", cliente: "" })} className="mt-6 bg-zinc-800 hover:bg-zinc-700 rounded-2xl p-3 font-bold">Limpar filtros</button>
+              </div>
+            </section>
+
+            <div className="grid md:grid-cols-3 gap-4">
+              <Card titulo="Fretes encontrados" valor={fretesAReceber.length} icone={Route} />
+              <Card titulo="Total a receber" valor={moeda(totalFretesAReceber)} icone={Wallet} destaque />
+              <Card titulo="Clientes filtrados" valor={filtroRecebimentos.cliente || "Todos"} icone={Building2} />
+            </div>
+
+            <ListaViagens viagens={fretesAReceber} apagarViagem={(id) => setViagens(viagens.filter(v => v.id !== id))} />
           </div>
         )}
 
