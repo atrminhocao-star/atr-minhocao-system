@@ -229,6 +229,7 @@ export default function App() {
     caminhao: "",
     origem: "Manual",
   });
+  const [entradaEditandoId, setEntradaEditandoId] = useState(null);
 
   const [saidaForm, setSaidaForm] = useState({
     data: "",
@@ -238,6 +239,7 @@ export default function App() {
     caminhao: "",
     origem: "Manual",
   });
+  const [saidaEditandoId, setSaidaEditandoId] = useState(null);
 
   const [contaReceberForm, setContaReceberForm] = useState({
     cliente: "",
@@ -557,20 +559,7 @@ export default function App() {
     };
   }, [entradasCaixa, saidasCaixa]);
 
-  const salvarEntradaCaixa = () => {
-    if (!entradaForm.data || !entradaForm.valor) {
-      return alert("Informe data e valor da entrada.");
-    }
-
-    setEntradasCaixa([
-      ...entradasCaixa,
-      {
-        id: crypto.randomUUID(),
-        ...entradaForm,
-        valor: numero(entradaForm.valor),
-      },
-    ]);
-
+  const limparEntradaForm = () => {
     setEntradaForm({
       data: "",
       valor: "",
@@ -579,22 +568,10 @@ export default function App() {
       caminhao: "",
       origem: "Manual",
     });
+    setEntradaEditandoId(null);
   };
 
-  const salvarSaidaCaixa = () => {
-    if (!saidaForm.data || !saidaForm.valor) {
-      return alert("Informe data e valor da saída.");
-    }
-
-    setSaidasManuais([
-      ...saidasManuais,
-      {
-        id: crypto.randomUUID(),
-        ...saidaForm,
-        valor: numero(saidaForm.valor),
-      },
-    ]);
-
+  const limparSaidaForm = () => {
     setSaidaForm({
       data: "",
       valor: "",
@@ -603,6 +580,85 @@ export default function App() {
       caminhao: "",
       origem: "Manual",
     });
+    setSaidaEditandoId(null);
+  };
+
+  const salvarEntradaCaixa = () => {
+    if (!entradaForm.data || !entradaForm.valor) {
+      return alert("Informe data e valor da entrada.");
+    }
+
+    if (entradaEditandoId) {
+      setEntradasCaixa(entradasCaixa.map((e) =>
+        e.id === entradaEditandoId
+          ? { ...e, ...entradaForm, valor: numero(entradaForm.valor) }
+          : e
+      ));
+    } else {
+      setEntradasCaixa([
+        ...entradasCaixa,
+        {
+          id: crypto.randomUUID(),
+          ...entradaForm,
+          valor: numero(entradaForm.valor),
+        },
+      ]);
+    }
+
+    limparEntradaForm();
+  };
+
+  const salvarSaidaCaixa = () => {
+    if (!saidaForm.data || !saidaForm.valor) {
+      return alert("Informe data e valor da saída.");
+    }
+
+    if (saidaEditandoId) {
+      setSaidasManuais(saidasManuais.map((s) =>
+        s.id === saidaEditandoId
+          ? { ...s, ...saidaForm, valor: numero(saidaForm.valor) }
+          : s
+      ));
+    } else {
+      setSaidasManuais([
+        ...saidasManuais,
+        {
+          id: crypto.randomUUID(),
+          ...saidaForm,
+          valor: numero(saidaForm.valor),
+        },
+      ]);
+    }
+
+    limparSaidaForm();
+  };
+
+  const editarEntradaCaixa = (entrada) => {
+    setEntradaEditandoId(entrada.id);
+    setEntradaForm({
+      data: entrada.data || "",
+      valor: String(entrada.valor || ""),
+      descricao: entrada.descricao || "",
+      cliente: entrada.cliente || "",
+      caminhao: entrada.caminhao || "",
+      origem: "Manual",
+    });
+    setAba("fluxo");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const editarSaidaCaixa = (saida) => {
+    setSaidaEditandoId(saida.id);
+    setSaidaForm({
+      data: saida.data || "",
+      valor: String(saida.valor || ""),
+      descricao: saida.descricao || "",
+      cliente: saida.cliente || "",
+      caminhao: saida.caminhao || "",
+      origem: "Manual",
+    });
+    setAba("fluxo");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const marcarFretePago = (viagem) => {
@@ -1587,20 +1643,27 @@ export default function App() {
 
             <div className="grid md:grid-cols-2 gap-5">
               <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-                <h2 className="text-2xl font-black mb-4">Nova entrada de caixa</h2>
+                <h2 className="text-2xl font-black mb-4">{entradaEditandoId ? "Editar entrada de caixa" : "Nova entrada de caixa"}</h2>
                 <div className="grid gap-3">
                   <Input label="Data da entrada" type="date" value={entradaForm.data} onChange={(v) => setEntradaForm({ ...entradaForm, data: v })} />
                   <Input label="Valor R$" value={entradaForm.valor} onChange={(v) => setEntradaForm({ ...entradaForm, valor: formatarValorDigitado(v) })} />
                   <Select label="Cliente/empresa" value={entradaForm.cliente} onChange={(v) => setEntradaForm({ ...entradaForm, cliente: v })} options={clientes.map(c => c.nome)} />
                   <Input label="Descrição" value={entradaForm.descricao} onChange={(v) => setEntradaForm({ ...entradaForm, descricao: v })} />
                 </div>
-                <button onClick={salvarEntradaCaixa} className="mt-4 bg-green-700 hover:bg-green-800 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2">
-                  <Save size={18} /> Salvar entrada
-                </button>
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <button onClick={salvarEntradaCaixa} className="bg-green-700 hover:bg-green-800 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2">
+                    <Save size={18} /> {entradaEditandoId ? "Salvar alterações" : "Salvar entrada"}
+                  </button>
+                  {entradaEditandoId && (
+                    <button onClick={limparEntradaForm} className="bg-zinc-800 hover:bg-zinc-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2">
+                      <X size={18} /> Cancelar
+                    </button>
+                  )}
+                </div>
               </section>
 
               <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-                <h2 className="text-2xl font-black mb-4">Nova saída de caixa</h2>
+                <h2 className="text-2xl font-black mb-4">{saidaEditandoId ? "Editar saída de caixa" : "Nova saída de caixa"}</h2>
                 <div className="grid gap-3">
                   <Input label="Data da saída" type="date" value={saidaForm.data} onChange={(v) => setSaidaForm({ ...saidaForm, data: v })} />
                   <Input label="Valor R$" value={saidaForm.valor} onChange={(v) => setSaidaForm({ ...saidaForm, valor: formatarValorDigitado(v) })} />
@@ -1608,9 +1671,16 @@ export default function App() {
                   <Select label="Caminhão" value={saidaForm.caminhao} onChange={(v) => setSaidaForm({ ...saidaForm, caminhao: v })} options={caminhoes.map(c => c.placa)} />
                   <Input label="Descrição/observação" value={saidaForm.descricao} onChange={(v) => setSaidaForm({ ...saidaForm, descricao: v })} />
                 </div>
-                <button onClick={salvarSaidaCaixa} className="mt-4 bg-red-600 hover:bg-red-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2">
-                  <Save size={18} /> Salvar saída
-                </button>
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <button onClick={salvarSaidaCaixa} className="bg-red-600 hover:bg-red-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2">
+                    <Save size={18} /> {saidaEditandoId ? "Salvar alterações" : "Salvar saída"}
+                  </button>
+                  {saidaEditandoId && (
+                    <button onClick={limparSaidaForm} className="bg-zinc-800 hover:bg-zinc-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2">
+                      <X size={18} /> Cancelar
+                    </button>
+                  )}
+                </div>
               </section>
             </div>
 
@@ -1620,7 +1690,16 @@ export default function App() {
               </button>
             </div>
 
-            <ListaFluxoCaixa fluxo={fluxoCaixa} apagarEntrada={(id) => setEntradasCaixa(entradasCaixa.filter(e => e.id !== id))} apagarSaida={(id) => setSaidasManuais(saidasManuais.filter(s => s.id !== id))} viagens={viagens} marcarFretePago={marcarFretePago} desfazerPagamentoFrete={desfazerPagamentoFrete} />
+            <ListaFluxoCaixa
+              fluxo={fluxoCaixa}
+              apagarEntrada={(id) => setEntradasCaixa(entradasCaixa.filter(e => e.id !== id))}
+              apagarSaida={(id) => setSaidasManuais(saidasManuais.filter(s => s.id !== id))}
+              editarEntrada={editarEntradaCaixa}
+              editarSaida={editarSaidaCaixa}
+              viagens={viagens}
+              marcarFretePago={marcarFretePago}
+              desfazerPagamentoFrete={desfazerPagamentoFrete}
+            />
           </div>
         )}
 
@@ -1861,81 +1940,209 @@ function ListaContasReceberFixas({ contas, marcarPago, apagarConta }) {
   );
 }
 
-function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, viagens, marcarFretePago, desfazerPagamentoFrete }) {
+
+function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, editarSaida, viagens, marcarFretePago, desfazerPagamentoFrete }) {
+  const [pagina, setPagina] = React.useState(1);
+  const [tipoFiltro, setTipoFiltro] = React.useState("Todos");
+  const [ordenacaoData, setOrdenacaoData] = React.useState("desc");
+  const porPagina = 10;
+
+  const fluxoFiltrado = fluxo
+    .filter((item) => tipoFiltro === "Todos" || item.tipo === tipoFiltro)
+    .sort((a, b) => {
+      const dataA = a.data || "";
+      const dataB = b.data || "";
+      if (dataA < dataB) return ordenacaoData === "asc" ? -1 : 1;
+      if (dataA > dataB) return ordenacaoData === "asc" ? 1 : -1;
+      return 0;
+    });
+
+  const totalPaginas = Math.max(1, Math.ceil(fluxoFiltrado.length / porPagina));
+  const inicio = (pagina - 1) * porPagina;
+  const itensPagina = fluxoFiltrado.slice(inicio, inicio + porPagina);
+
+  const totalEntradas = fluxoFiltrado.filter((i) => i.tipo === "Entrada").reduce((s, i) => s + numero(i.valor), 0);
+  const totalSaidas = fluxoFiltrado.filter((i) => i.tipo === "Saída").reduce((s, i) => s + numero(i.valor), 0);
+
+  const emitirPdfFiltrado = () => {
+    const linhas = fluxoFiltrado.map((item) => `
+      <tr>
+        <td>${formatarData(item.data)}</td>
+        <td>${item.tipo}</td>
+        <td>${item.cliente || "-"}</td>
+        <td>${item.caminhao || "-"}</td>
+        <td>${item.descricao || "-"}</td>
+        <td>${moeda(item.valor)}</td>
+      </tr>
+    `).join("");
+
+    const html = `
+      <html>
+        <head>
+          <title>Fluxo de caixa - ATR MINHOCÃO</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; color: #111; }
+            h1 { color: #d71920; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 16px; }
+            th { background: #d71920; color: white; padding: 8px; text-align: left; }
+            td { border-bottom: 1px solid #ddd; padding: 8px; }
+            @media print { button { display: none; } }
+          </style>
+        </head>
+        <body>
+          <button onclick="window.print()" style="padding:10px 16px;background:#d71920;color:white;border:0;border-radius:8px;font-weight:bold;">
+            Salvar PDF
+          </button>
+          <h1>ATR MINHOCÃO</h1>
+          <h2>Fluxo de caixa</h2>
+          <p><strong>Filtro:</strong> ${tipoFiltro} | <strong>Ordem:</strong> ${ordenacaoData === "asc" ? "crescente" : "decrescente"}</p>
+          <p><strong>Entradas:</strong> ${moeda(totalEntradas)} | <strong>Saídas:</strong> ${moeda(totalSaidas)} | <strong>Saldo:</strong> ${moeda(totalEntradas - totalSaidas)}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Empresa</th>
+                <th>Caminhão</th>
+                <th>Descrição</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody>${linhas || `<tr><td colspan="6">Nenhuma movimentação encontrada.</td></tr>`}</tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    const janela = window.open("", "_blank");
+    janela.document.write(html);
+    janela.document.close();
+    janela.focus();
+  };
+
   return (
     <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-      <h2 className="text-2xl font-black mb-4">Movimentações do fluxo de caixa</h2>
-      <div className="overflow-auto">
-        <table className="w-full min-w-[1000px] text-left text-sm border-separate border-spacing-y-3">
-          <thead className="text-zinc-400">
-            <tr>
-              <th className="px-4 pb-2">Data</th>
-              <th className="px-4 pb-2">Tipo</th>
-              <th className="px-4 pb-2">Valor</th>
-              <th className="px-4 pb-2">Cliente/empresa</th>
-              <th className="px-4 pb-2">Caminhão</th>
-              <th className="px-4 pb-2">Descrição</th>
-              <th className="px-4 pb-2">Origem</th>
-              <th className="px-4 pb-2">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {fluxo.map((item) => (
-              <tr key={`${item.tipo}-${item.id}`} className="bg-zinc-950">
-                <td className="px-4 py-4 rounded-l-2xl whitespace-nowrap">{formatarData(item.data)}</td>
-                <td className="px-4 py-4 whitespace-nowrap">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+        <div>
+          <h2 className="text-2xl font-black">Movimentações do fluxo de caixa</h2>
+          <p className="text-zinc-400 text-sm">Máximo de 10 movimentações por página.</p>
+        </div>
+        <button onClick={emitirPdfFiltrado} className="bg-red-600 hover:bg-red-700 rounded-2xl px-4 py-2 font-bold">
+          Emitir PDF filtrado
+        </button>
+      </div>
+
+      <div className="grid md:grid-cols-4 gap-3 mb-4">
+        <Select
+          label="Filtrar tipo"
+          value={tipoFiltro}
+          onChange={(v) => { setTipoFiltro(v); setPagina(1); }}
+          options={["Todos", "Entrada", "Saída"]}
+        />
+        <Select
+          label="Ordenar data"
+          value={ordenacaoData}
+          onChange={(v) => { setOrdenacaoData(v); setPagina(1); }}
+          options={["desc", "asc"]}
+        />
+        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3">
+          <p className="text-xs text-zinc-500">Entradas filtradas</p>
+          <p className="font-black text-green-400">{moeda(totalEntradas)}</p>
+        </div>
+        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3">
+          <p className="text-xs text-zinc-500">Saídas filtradas</p>
+          <p className="font-black text-red-400">{moeda(totalSaidas)}</p>
+        </div>
+      </div>
+
+      <div className="grid gap-3">
+        {itensPagina.map((item) => (
+          <div key={`${item.tipo}-${item.id}`} className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+              <div>
+                <div className="flex flex-wrap gap-2 mb-2">
                   <span className={`rounded-full px-3 py-1 text-xs font-bold ${item.tipo === "Entrada" ? "bg-green-700" : "bg-red-700"}`}>
                     {item.tipo}
                   </span>
-                </td>
-                <td className={`px-4 py-4 font-bold whitespace-nowrap ${item.tipo === "Entrada" ? "text-green-400" : "text-red-400"}`}>
+                  <span className="bg-zinc-800 rounded-full px-3 py-1 text-xs">{formatarData(item.data)}</span>
+                  <span className="bg-zinc-800 rounded-full px-3 py-1 text-xs">{item.origem || "-"}</span>
+                </div>
+                <h3 className={`font-black text-lg ${item.tipo === "Entrada" ? "text-green-400" : "text-red-400"}`}>
                   {moeda(item.valor)}
-                </td>
-                <td className="px-4 py-4 whitespace-nowrap">{item.cliente || "-"}</td>
-                <td className="px-4 py-4 whitespace-nowrap">{item.caminhao || "-"}</td>
-                <td className="px-4 py-4">{item.descricao || "-"}</td>
-                <td className="px-4 py-4 whitespace-nowrap">{item.origem || "-"}</td>
-                <td className="px-4 py-4 rounded-r-2xl whitespace-nowrap">
-                  {item.origem === "Frete" && item.viagemId ? (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => { const v = viagens.find((v) => v.id === item.viagemId); if (v) marcarFretePago(v); }}
-                        className="bg-green-900 hover:bg-green-800 rounded-xl px-3 py-2 font-bold"
-                      >
-                        Alterar data
-                      </button>
-                      <button
-                        onClick={() => { const v = viagens.find((v) => v.id === item.viagemId); if (v) desfazerPagamentoFrete(v); }}
-                        className="bg-yellow-700 hover:bg-yellow-800 rounded-xl px-3 py-2 font-bold"
-                      >
-                        Desfazer
-                      </button>
-                    </div>
-                  ) : item.origem === "Manual" ? (
+                </h3>
+                <p className="text-zinc-300 text-sm">{item.descricao || "-"}</p>
+                <p className="text-zinc-500 text-xs mt-1">
+                  Empresa: {item.cliente || "-"} • Caminhão: {item.caminhao || "-"}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap lg:justify-end gap-2">
+                {item.origem === "Frete" && item.viagemId ? (
+                  <>
+                    <button
+                      onClick={() => { const v = viagens.find((v) => v.id === item.viagemId); if (v) marcarFretePago(v); }}
+                      className="bg-green-900 hover:bg-green-800 rounded-xl px-3 py-2 text-xs font-bold"
+                    >
+                      Alterar data
+                    </button>
+                    <button
+                      onClick={() => { const v = viagens.find((v) => v.id === item.viagemId); if (v) desfazerPagamentoFrete(v); }}
+                      className="bg-yellow-700 hover:bg-yellow-800 rounded-xl px-3 py-2 text-xs font-bold"
+                    >
+                      Desfazer
+                    </button>
+                  </>
+                ) : item.origem === "Manual" ? (
+                  <>
+                    <button
+                      onClick={() => item.tipo === "Entrada" ? editarEntrada(item) : editarSaida(item)}
+                      className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 text-xs font-bold"
+                    >
+                      Editar
+                    </button>
                     <button
                       onClick={() => item.tipo === "Entrada" ? apagarEntrada(item.id) : apagarSaida(item.id)}
-                      className="bg-red-600 hover:bg-red-700 rounded-xl px-3 py-2 font-bold"
+                      className="bg-red-600 hover:bg-red-700 rounded-xl px-3 py-2 text-xs font-bold"
                     >
                       Apagar
                     </button>
-                  ) : "-"}
-                </td>
-              </tr>
-            ))}
+                  </>
+                ) : "-"}
+              </div>
+            </div>
+          </div>
+        ))}
 
-            {fluxo.length === 0 && (
-              <tr>
-                <td colSpan="8" className="px-4 py-6 text-zinc-400">
-                  Nenhuma movimentação cadastrada.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        {itensPagina.length === 0 && (
+          <p className="text-zinc-400 py-6">Nenhuma movimentação encontrada.</p>
+        )}
+      </div>
+
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mt-5">
+        <p className="text-zinc-400 text-sm">
+          Página {pagina} de {totalPaginas}
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setPagina(Math.max(1, pagina - 1))}
+            disabled={pagina === 1}
+            className="bg-zinc-800 disabled:opacity-40 hover:bg-zinc-700 rounded-xl px-4 py-2 font-bold"
+          >
+            Anterior
+          </button>
+          <button
+            onClick={() => setPagina(Math.min(totalPaginas, pagina + 1))}
+            disabled={pagina === totalPaginas}
+            className="bg-zinc-800 disabled:opacity-40 hover:bg-zinc-700 rounded-xl px-4 py-2 font-bold"
+          >
+            Próxima
+          </button>
+        </div>
       </div>
     </section>
   );
 }
+
 
 
 function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, desfazerPagamentoFrete }) {
@@ -1944,7 +2151,7 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
     direcao: "desc",
   });
   const [pagina, setPagina] = React.useState(1);
-  const porPagina = 15;
+  const porPagina = 10;
 
   const alternarOrdenacao = (campo) => {
     setPagina(1);
@@ -2000,7 +2207,7 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
         <div>
           <h2 className="text-2xl font-black">Viagens cadastradas</h2>
           <p className="text-zinc-400 text-sm">
-            Exibindo até 15 viagens por página. Total: {viagensOrdenadas.length}.
+            Exibindo até 10 viagens por página. Total: {viagensOrdenadas.length}.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
