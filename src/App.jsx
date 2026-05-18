@@ -64,6 +64,16 @@ const somarMeses = (dataISO, meses) => {
   return data.toISOString().slice(0, 10);
 };
 
+const freteEmAtraso = (viagem) => {
+  if (!viagem || viagem.fretePago || !viagem.previsaoPagamento) return false;
+  return viagem.previsaoPagamento < hojeISO();
+};
+
+const statusPrazoFrete = (viagem) => {
+  if (freteEmAtraso(viagem)) return "Em atraso";
+  return "Dentro do prazo";
+};
+
 const juntarPorId = (listas = []) => {
   const mapa = new Map();
 
@@ -210,6 +220,7 @@ export default function App() {
     inicio: "",
     fim: "",
     cliente: "",
+    prazo: "",
   });
 
   const [filtroRelatorio, setFiltroRelatorio] = useState({
@@ -382,8 +393,9 @@ export default function App() {
         const okInicio = !filtroRecebimentos.inicio || v.previsaoPagamento >= filtroRecebimentos.inicio;
         const okFim = !filtroRecebimentos.fim || v.previsaoPagamento <= filtroRecebimentos.fim;
         const okCliente = !filtroRecebimentos.cliente || v.cliente === filtroRecebimentos.cliente;
+        const okPrazo = !filtroRecebimentos.prazo || statusPrazoFrete(v) === filtroRecebimentos.prazo;
         const naoPago = !v.fretePago;
-        return okInicio && okFim && okCliente && naoPago;
+        return okInicio && okFim && okCliente && okPrazo && naoPago;
       })
       .sort((a, b) => String(a.previsaoPagamento || "9999-12-31").localeCompare(String(b.previsaoPagamento || "9999-12-31")));
   }, [viagens, filtroRecebimentos]);
@@ -391,6 +403,16 @@ export default function App() {
   const totalFretesAReceber = useMemo(() => {
     return fretesAReceber.reduce((s, v) => s + numero(v.frete), 0);
   }, [fretesAReceber]);
+
+  const fretesEmAtrasoDashboard = useMemo(() => {
+    return viagens
+      .filter((v) => numero(v.frete) > 0 && freteEmAtraso(v))
+      .sort((a, b) => String(a.previsaoPagamento || "9999-12-31").localeCompare(String(b.previsaoPagamento || "9999-12-31")));
+  }, [viagens]);
+
+  const totalFretesEmAtraso = useMemo(() => {
+    return fretesEmAtrasoDashboard.reduce((s, v) => s + numero(v.frete), 0);
+  }, [fretesEmAtrasoDashboard]);
 
   const viagensRelatorio = useMemo(() => {
     return viagens
@@ -1338,6 +1360,39 @@ export default function App() {
               <Card titulo="Contas a pagar" valor={moeda(totais.pendente)} icone={CalendarDays} destaque />
             </div>
 
+            <section className={`border rounded-3xl p-5 ${fretesEmAtrasoDashboard.length ? "bg-red-950/40 border-red-800" : "bg-zinc-900 border-zinc-800"}`}>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                <div>
+                  <h2 className="text-2xl font-black">Mural de pagamentos em atraso</h2>
+                  <p className="text-zinc-400">
+                    Fretes que passaram da previsão de pagamento e ainda não foram marcados como pagos.
+                  </p>
+                </div>
+                <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 min-w-[190px]">
+                  <p className="text-xs text-zinc-500">Total em atraso</p>
+                  <p className="text-red-400 font-black text-xl">{moeda(totalFretesEmAtraso)}</p>
+                </div>
+              </div>
+
+              {fretesEmAtrasoDashboard.length > 0 ? (
+                <div className="grid md:grid-cols-2 gap-3">
+                  {fretesEmAtrasoDashboard.slice(0, 6).map((v) => (
+                    <div key={v.id} className="bg-red-950/50 border border-red-800 rounded-2xl p-4">
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        <span className="bg-red-600 rounded-full px-3 py-1 text-xs font-bold">EM ATRASO</span>
+                        <span className="bg-zinc-900 rounded-full px-3 py-1 text-xs">Prev.: {formatarData(v.previsaoPagamento)}</span>
+                      </div>
+                      <p className="font-black">{v.cliente || "-"}</p>
+                      <p className="text-zinc-300 text-sm">Pedido: {v.numeroPedido || "Não informado"} • {v.caminhao || "-"}</p>
+                      <p className="text-red-300 font-bold mt-1">{moeda(v.frete)}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-green-400 font-bold">Nenhum frete em atraso no momento.</p>
+              )}
+            </section>
+
             <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
               <h2 className="text-2xl font-black mb-4">Resumo por cliente</h2>
               <div className="grid md:grid-cols-3 gap-4">
@@ -1573,17 +1628,19 @@ export default function App() {
                 <Filter className="text-red-500" />
                 <h2 className="text-2xl font-black">Filtros de fretes a receber</h2>
               </div>
-              <div className="grid md:grid-cols-4 gap-3">
+              <div className="grid md:grid-cols-5 gap-3">
                 <Input label="Data inicial" type="date" value={filtroRecebimentos.inicio} onChange={(v) => setFiltroRecebimentos({ ...filtroRecebimentos, inicio: v })} />
                 <Input label="Data final" type="date" value={filtroRecebimentos.fim} onChange={(v) => setFiltroRecebimentos({ ...filtroRecebimentos, fim: v })} />
                 <Select label="Cliente" value={filtroRecebimentos.cliente} onChange={(v) => setFiltroRecebimentos({ ...filtroRecebimentos, cliente: v })} options={clientes.map(c => c.nome)} />
-                <button onClick={() => setFiltroRecebimentos({ inicio: "", fim: "", cliente: "" })} className="mt-6 bg-zinc-800 hover:bg-zinc-700 rounded-2xl p-3 font-bold">Limpar filtros</button>
+                <Select label="Status do prazo" value={filtroRecebimentos.prazo} onChange={(v) => setFiltroRecebimentos({ ...filtroRecebimentos, prazo: v })} options={["Em atraso", "Dentro do prazo"]} />
+                <button onClick={() => setFiltroRecebimentos({ inicio: "", fim: "", cliente: "", prazo: "" })} className="mt-6 bg-zinc-800 hover:bg-zinc-700 rounded-2xl p-3 font-bold">Limpar filtros</button>
               </div>
             </section>
 
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-4 gap-4">
               <Card titulo="Fretes encontrados" valor={fretesAReceber.length} icone={Route} />
               <Card titulo="Total a receber" valor={moeda(totalFretesAReceber)} icone={Wallet} destaque />
+              <Card titulo="Em atraso" valor={fretesAReceber.filter(freteEmAtraso).length} icone={CalendarDays} />
               <Card titulo="Clientes filtrados" valor={filtroRecebimentos.cliente || "Todos"} icone={Building2} />
             </div>
 
@@ -1941,19 +1998,60 @@ function ListaContasReceberFixas({ contas, marcarPago, apagarConta }) {
 }
 
 
+
 function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, editarSaida, viagens, marcarFretePago, desfazerPagamentoFrete }) {
   const [pagina, setPagina] = React.useState(1);
   const [tipoFiltro, setTipoFiltro] = React.useState("Todos");
-  const [ordenacaoData, setOrdenacaoData] = React.useState("desc");
+  const [ordenarPor, setOrdenarPor] = React.useState("data-desc");
+  const [pesquisa, setPesquisa] = React.useState("");
   const porPagina = 10;
+
+  const textoPesquisa = pesquisa.trim().toLowerCase();
 
   const fluxoFiltrado = fluxo
     .filter((item) => tipoFiltro === "Todos" || item.tipo === tipoFiltro)
+    .filter((item) => {
+      if (!textoPesquisa) return true;
+
+      const conteudo = [
+        item.data,
+        formatarData(item.data),
+        item.tipo,
+        item.valor,
+        moeda(item.valor),
+        item.cliente,
+        item.caminhao,
+        item.descricao,
+        item.origem,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return conteudo.includes(textoPesquisa);
+    })
     .sort((a, b) => {
-      const dataA = a.data || "";
-      const dataB = b.data || "";
-      if (dataA < dataB) return ordenacaoData === "asc" ? -1 : 1;
-      if (dataA > dataB) return ordenacaoData === "asc" ? 1 : -1;
+      if (ordenarPor === "data-asc" || ordenarPor === "data-desc") {
+        const dataA = a.data || "";
+        const dataB = b.data || "";
+        if (dataA < dataB) return ordenarPor === "data-asc" ? -1 : 1;
+        if (dataA > dataB) return ordenarPor === "data-asc" ? 1 : -1;
+        return 0;
+      }
+
+      if (ordenarPor === "empresa-asc" || ordenarPor === "empresa-desc") {
+        const empresaA = String(a.cliente || "").toLowerCase();
+        const empresaB = String(b.cliente || "").toLowerCase();
+        if (empresaA < empresaB) return ordenarPor === "empresa-asc" ? -1 : 1;
+        if (empresaA > empresaB) return ordenarPor === "empresa-asc" ? 1 : -1;
+        return 0;
+      }
+
+      if (ordenarPor === "valor-asc" || ordenarPor === "valor-desc") {
+        const valorA = numero(a.valor);
+        const valorB = numero(b.valor);
+        return ordenarPor === "valor-asc" ? valorA - valorB : valorB - valorA;
+      }
+
       return 0;
     });
 
@@ -1964,6 +2062,8 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
   const totalEntradas = fluxoFiltrado.filter((i) => i.tipo === "Entrada").reduce((s, i) => s + numero(i.valor), 0);
   const totalSaidas = fluxoFiltrado.filter((i) => i.tipo === "Saída").reduce((s, i) => s + numero(i.valor), 0);
 
+  const filtrosTexto = `Tipo: ${tipoFiltro} | Ordenação: ${ordenarPor} | Pesquisa: ${pesquisa || "Sem pesquisa"}`;
+
   const emitirPdfFiltrado = () => {
     const linhas = fluxoFiltrado.map((item) => `
       <tr>
@@ -1972,6 +2072,7 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
         <td>${item.cliente || "-"}</td>
         <td>${item.caminhao || "-"}</td>
         <td>${item.descricao || "-"}</td>
+        <td>${item.origem || "-"}</td>
         <td>${moeda(item.valor)}</td>
       </tr>
     `).join("");
@@ -1994,8 +2095,8 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
             Salvar PDF
           </button>
           <h1>ATR MINHOCÃO</h1>
-          <h2>Fluxo de caixa</h2>
-          <p><strong>Filtro:</strong> ${tipoFiltro} | <strong>Ordem:</strong> ${ordenacaoData === "asc" ? "crescente" : "decrescente"}</p>
+          <h2>Fluxo de caixa filtrado</h2>
+          <p><strong>Filtros:</strong> ${filtrosTexto}</p>
           <p><strong>Entradas:</strong> ${moeda(totalEntradas)} | <strong>Saídas:</strong> ${moeda(totalSaidas)} | <strong>Saldo:</strong> ${moeda(totalEntradas - totalSaidas)}</p>
           <table>
             <thead>
@@ -2005,10 +2106,11 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
                 <th>Empresa</th>
                 <th>Caminhão</th>
                 <th>Descrição</th>
+                <th>Origem</th>
                 <th>Valor</th>
               </tr>
             </thead>
-            <tbody>${linhas || `<tr><td colspan="6">Nenhuma movimentação encontrada.</td></tr>`}</tbody>
+            <tbody>${linhas || `<tr><td colspan="7">Nenhuma movimentação encontrada.</td></tr>`}</tbody>
           </table>
         </body>
       </html>
@@ -2019,7 +2121,6 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
     janela.document.close();
     janela.focus();
   };
-
 
   const emitirPdfDespesasPorCaminhao = () => {
     const saidas = fluxoFiltrado.filter((item) => item.tipo === "Saída");
@@ -2080,6 +2181,7 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
           </button>
           <h1>ATR MINHOCÃO</h1>
           <h2>Relatório de despesas por caminhão</h2>
+          <p><strong>Filtros:</strong> ${filtrosTexto}</p>
           <p><strong>Total geral:</strong> ${moeda(totalGeral)}</p>
           ${conteudo || "<p>Nenhuma despesa encontrada para o filtro atual.</p>"}
         </body>
@@ -2151,6 +2253,7 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
           </button>
           <h1>ATR MINHOCÃO</h1>
           <h2>Relatório de entradas por empresa</h2>
+          <p><strong>Filtros:</strong> ${filtrosTexto}</p>
           <p><strong>Total geral:</strong> ${moeda(totalGeral)}</p>
           ${conteudo || "<p>Nenhuma entrada encontrada para o filtro atual.</p>"}
         </body>
@@ -2183,7 +2286,7 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
         </div>
       </div>
 
-      <div className="grid md:grid-cols-4 gap-3 mb-4">
+      <div className="grid md:grid-cols-5 gap-3 mb-4">
         <Select
           label="Filtrar tipo"
           value={tipoFiltro}
@@ -2191,10 +2294,15 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
           options={["Todos", "Entrada", "Saída"]}
         />
         <Select
-          label="Ordenar data"
-          value={ordenacaoData}
-          onChange={(v) => { setOrdenacaoData(v); setPagina(1); }}
-          options={["desc", "asc"]}
+          label="Ordenar por"
+          value={ordenarPor}
+          onChange={(v) => { setOrdenarPor(v); setPagina(1); }}
+          options={["data-desc", "data-asc", "empresa-asc", "empresa-desc", "valor-desc", "valor-asc"]}
+        />
+        <Input
+          label="Pesquisar"
+          value={pesquisa}
+          onChange={(v) => { setPesquisa(v); setPagina(1); }}
         />
         <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3">
           <p className="text-xs text-zinc-500">Entradas filtradas</p>
@@ -2262,7 +2370,8 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
 
         {itensPagina.length === 0 && (
           <p className="text-zinc-400 py-6">Nenhuma movimentação encontrada.</p>
@@ -2293,8 +2402,6 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
     </section>
   );
 }
-
-
 
 function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, desfazerPagamentoFrete }) {
   const [ordenacao, setOrdenacao] = React.useState({
@@ -2372,8 +2479,10 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
       </div>
 
       <div className="grid gap-3">
-        {viagensPagina.map((v) => (
-          <div key={v.id} className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4">
+        {viagensPagina.map((v) => {
+          const estaAtrasado = freteEmAtraso(v);
+          return (
+          <div key={v.id} className={`${estaAtrasado ? "bg-red-950/40 border-red-700" : "bg-zinc-950 border-zinc-800"} border rounded-2xl p-4`}>
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex flex-wrap gap-2 mb-2">
@@ -2382,6 +2491,11 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
                   <span className="bg-zinc-800 rounded-full px-3 py-1 text-xs">{v.status || "-"}</span>
                   {v.fretePago && (
                     <span className="bg-green-800 rounded-full px-3 py-1 text-xs">Pago: {formatarData(v.dataPagamentoFrete)}</span>
+                  )}
+                  {!v.fretePago && v.previsaoPagamento && (
+                    <span className={`${estaAtrasado ? "bg-red-600" : "bg-green-800"} rounded-full px-3 py-1 text-xs font-bold`}>
+                      {estaAtrasado ? "EM ATRASO" : "Dentro do prazo"}
+                    </span>
                   )}
                 </div>
 
