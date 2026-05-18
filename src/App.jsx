@@ -1397,7 +1397,6 @@ export default function App() {
     { id: "viagens", nome: "Viagens" },
     { id: "fluxo", nome: "Fluxo de caixa" },
     { id: "receberfixo", nome: "Contas fixas a receber" },
-    { id: "despesas", nome: "Abastecimentos/Despesas" },
     { id: "contas", nome: "Despesas da empresa" },
     { id: "usuarios", nome: "Usuários" },
   ];
@@ -1884,69 +1883,6 @@ export default function App() {
             </section>
 
             <ListaContasReceberFixas contas={contasReceberFixas} marcarPago={marcarContaReceberPaga} apagarConta={(id) => setContasReceberFixas(contasReceberFixas.filter(c => c.id !== id))} />
-          </div>
-        )}
-
-        {aba === "despesas" && (
-          <div className="space-y-5">
-            <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-              <h2 className="text-2xl font-black mb-1">{despesaEditandoId ? "Editar abastecimento/despesa" : "Novo abastecimento/despesa por caminhão"}</h2>
-              <p className="text-zinc-400 mb-4">Controle combustível e despesas independentes da viagem.</p>
-
-              <div className="grid md:grid-cols-4 gap-3">
-                <Input label="Data" type="date" value={despesaForm.data} onChange={(v) => setDespesaForm({ ...despesaForm, data: v })} />
-                <Select label="Caminhão" value={despesaForm.caminhao} onChange={(v) => setDespesaForm({ ...despesaForm, caminhao: v })} options={caminhoes.map(c => c.placa)} />
-                <Select label="Tipo" value={despesaForm.tipo} onChange={(v) => setDespesaForm({ ...despesaForm, tipo: v })} options={["Combustível", "Manutenção", "Pneu", "Pedágio", "Óleo", "Peças", "Outros"]} />
-                <Input label="Posto/empresa" value={despesaForm.postoEmpresa} onChange={(v) => setDespesaForm({ ...despesaForm, postoEmpresa: v })} />
-
-                {despesaForm.tipo === "Combustível" ? (
-                  <>
-                    <Input label="Quantidade de litros" value={despesaForm.litros} onChange={(v) => setDespesaForm({ ...despesaForm, litros: v })} icon={Droplets} />
-                    <Input label="Valor por litro R$" value={despesaForm.valorLitro} onChange={(v) => setDespesaForm({ ...despesaForm, valorLitro: formatarValorDigitado(v) })} />
-                    <Input label="KM no painel" value={despesaForm.kmPainel} onChange={(v) => setDespesaForm({ ...despesaForm, kmPainel: v })} icon={Gauge} />
-                    <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3">
-                      <p className="text-sm text-zinc-400">Total calculado</p>
-                      <p className="text-2xl font-black text-red-400">{moeda(numero(despesaForm.litros) * numero(despesaForm.valorLitro))}</p>
-                    </div>
-                  </>
-                ) : (
-                  <Input label="Valor R$" value={despesaForm.valor} onChange={(v) => setDespesaForm({ ...despesaForm, valor: formatarValorDigitado(v) })} />
-                )}
-
-                <Select label="Status do pagamento" value={despesaForm.statusPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, statusPagamento: v })} options={["Pago", "A prazo", "Pendente"]} />
-                <Select label="Forma de pagamento" value={despesaForm.formaPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, formaPagamento: v })} options={["Dinheiro", "Pix", "Cartão", "Boleto", "A prazo", "Desconto em folha", "Outro"]} />
-
-                {despesaForm.statusPagamento === "Pago" ? (
-                  <Input label="Data de pagamento" type="date" value={despesaForm.dataPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, dataPagamento: v })} />
-                ) : null}
-
-                {despesaForm.statusPagamento === "A prazo" || despesaForm.formaPagamento === "A prazo" || despesaForm.formaPagamento === "Desconto em folha" ? (
-                  <>
-                    <Select label="Empresa/cliente responsável pelo pagamento" value={despesaForm.responsavelPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, responsavelPagamento: v })} options={clientes.map(c => c.nome)} />
-                    <Input label="Data de vencimento/previsão" type="date" value={despesaForm.dataVencimento} onChange={(v) => setDespesaForm({ ...despesaForm, dataVencimento: v })} />
-                    <Input label="Data de pagamento" type="date" value={despesaForm.dataPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, dataPagamento: v })} />
-                  </>
-                ) : null}
-
-                <Input label="Observação" value={despesaForm.descricao} onChange={(v) => setDespesaForm({ ...despesaForm, descricao: v })} />
-              </div>
-
-              {despesaEditandoId && despesas.find((d) => d.id === despesaEditandoId)?.recorrenciaGrupoId && (
-                <label className="mt-4 flex items-center gap-2 text-sm text-zinc-300">
-                  <input
-                    type="checkbox"
-                    checked={aplicarRecorrencia}
-                    onChange={(e) => setAplicarRecorrencia(e.target.checked)}
-                  />
-                  Aplicar alterações principais em todas as parcelas desta recorrência
-                </label>
-              )}
-
-              <button onClick={salvarDespesa} className="mt-4 bg-red-600 hover:bg-red-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2"><Save size={18} /> {despesaEditandoId ? "Salvar alterações" : "Salvar lançamento"}</button>
-              {despesaEditandoId && <button onClick={cancelarEdicaoDespesa} className="mt-4 ml-2 bg-zinc-800 hover:bg-zinc-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2"><X size={18} /> Cancelar edição</button>}
-            </section>
-
-            <ListaDespesas despesas={despesas} apagarDespesa={(id) => setDespesas(despesas.filter(d => d.id !== id))} editarDespesa={editarDespesa} />
           </div>
         )}
 
@@ -2958,7 +2894,7 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
 function ListaDespesas({ despesas, apagarDespesa, editarDespesa }) {
   return (
     <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-      <h2 className="text-2xl font-black mb-4">Abastecimentos e despesas cadastradas</h2>
+      <h2 className="text-2xl font-black mb-4"></h2>
       <div className="overflow-auto">
         <table className="w-full min-w-[1250px] text-left text-sm border-separate border-spacing-y-3">
           <thead className="text-zinc-400">
