@@ -551,25 +551,30 @@ export default function App() {
   };
 
   const saidasCaixa = useMemo(() => {
-    const saidasDasDespesas = despesas.map((d) => ({
-      id: d.id,
-      data: d.dataPagamento || d.data || d.dataVencimento || "",
-      valor: numero(d.valor),
-      descricao: d.descricao || d.tipo || "Despesa",
-      cliente: d.responsavelPagamento || d.postoEmpresa || "",
-      caminhao: d.caminhao || "",
-      tipo: "Saída",
-      origem: "Despesa",
-    }));
+    const saidasDasDespesasPagas = despesas
+      .filter((d) => statusConta(d) === "Pago" && d.dataPagamento)
+      .map((d) => ({
+        id: d.id,
+        origemDespesaId: d.id,
+        data: d.dataPagamento,
+        valor: numero(d.valor),
+        descricao: d.descricao || d.tipo || "Despesa",
+        cliente: d.responsavelPagamento || d.postoEmpresa || "",
+        caminhao: d.caminhao || "",
+        tipo: "Saída",
+        origem: "Despesa",
+      }));
 
-    const saidasLancadas = saidasManuais.map((s) => ({
-      ...s,
-      valor: numero(s.valor),
-      tipo: "Saída",
-      origem: s.origem || "Manual",
-    }));
+    const saidasLancadas = saidasManuais
+      .filter((s) => !s.origemDespesaId)
+      .map((s) => ({
+        ...s,
+        valor: numero(s.valor),
+        tipo: "Saída",
+        origem: s.origem || "Manual",
+      }));
 
-    return [...saidasDasDespesas, ...saidasLancadas];
+    return [...saidasDasDespesasPagas, ...saidasLancadas];
   }, [despesas, saidasManuais]);
 
   const fluxoCaixa = useMemo(() => {
@@ -1851,6 +1856,7 @@ export default function App() {
               apagarSaida={(id) => setSaidasManuais(saidasManuais.filter(s => s.id !== id))}
               editarEntrada={editarEntradaCaixa}
               editarSaida={editarSaidaCaixa}
+              editarDespesa={editarDespesa}
               viagens={viagens}
               marcarFretePago={marcarFretePago}
               desfazerPagamentoFrete={desfazerPagamentoFrete}
@@ -2111,7 +2117,7 @@ function ListaContasReceberFixas({ contas, marcarPago, apagarConta }) {
 
 
 
-function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, editarSaida, viagens, marcarFretePago, desfazerPagamentoFrete }) {
+function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, editarSaida, editarDespesa, viagens, marcarFretePago, desfazerPagamentoFrete }) {
   const [pagina, setPagina] = React.useState(1);
   const [tipoFiltro, setTipoFiltro] = React.useState("Todos");
   const [ordenarPor, setOrdenarPor] = React.useState("data-desc");
@@ -2461,6 +2467,15 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
                       className="bg-yellow-700 hover:bg-yellow-800 rounded-xl px-3 py-2 text-xs font-bold"
                     >
                       Desfazer
+                    </button>
+                  </>
+                ) : item.origem === "Despesa" || item.origem === "Conta a pagar" ? (
+                  <>
+                    <button
+                      onClick={() => editarDespesa && editarDespesa(item)}
+                      className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 text-xs font-bold"
+                    >
+                      Editar despesa
                     </button>
                   </>
                 ) : item.origem === "Manual" ? (
@@ -3016,41 +3031,6 @@ function ListaContas({ despesas, editarDespesa, setDespesas, todasDespesas, setS
     setDespesas(todasDespesas.map((d) =>
       d.id === despesa.id ? despesaPaga : d
     ));
-
-    if (typeof setSaidasManuais === "function") {
-      setSaidasManuais((saidasAtuais) => {
-        const jaExiste = saidasAtuais.some((s) => s.origemDespesaId === despesa.id);
-        if (jaExiste) {
-          return saidasAtuais.map((s) =>
-            s.origemDespesaId === despesa.id
-              ? {
-                  ...s,
-                  data: dataPagamento,
-                  valor: numero(despesa.valor),
-                  descricao: `Pagamento de conta: ${despesa.descricao || despesa.tipo || "Despesa"}`,
-                  cliente: despesa.responsavelPagamento || despesa.postoEmpresa || "",
-                  caminhao: despesa.caminhao || "",
-                  origem: "Conta a pagar",
-                }
-              : s
-          );
-        }
-
-        return [
-          ...saidasAtuais,
-          {
-            id: crypto.randomUUID(),
-            origemDespesaId: despesa.id,
-            data: dataPagamento,
-            valor: numero(despesa.valor),
-            descricao: `Pagamento de conta: ${despesa.descricao || despesa.tipo || "Despesa"}`,
-            cliente: despesa.responsavelPagamento || despesa.postoEmpresa || "",
-            caminhao: despesa.caminhao || "",
-            origem: "Conta a pagar",
-          },
-        ];
-      });
-    }
   };
 
   const textoPesquisa = pesquisa.trim().toLowerCase();
