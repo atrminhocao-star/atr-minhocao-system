@@ -273,6 +273,7 @@ export default function App() {
 
   const [despesaForm, setDespesaForm] = useState(despesaVazia);
   const [despesaEditandoId, setDespesaEditandoId] = useState(null);
+  const [aplicarRecorrencia, setAplicarRecorrencia] = useState(false);
 
   useEffect(() => {
     let dadosEncontrados = null;
@@ -1221,6 +1222,7 @@ export default function App() {
     }
 
     const grupoId = crypto.randomUUID();
+    const valorParcelaRecorrente = numero(contaPagarRecorrenteForm.valorParcela);
 
     const novasContas = Array.from({ length: quantidade }, (_, index) => {
       const parcela = index + 1;
@@ -1245,7 +1247,7 @@ export default function App() {
         dataPagamento: "",
         responsavelPagamento: contaPagarRecorrenteForm.responsavelPagamento,
         descricao: `${contaPagarRecorrenteForm.descricao || contaPagarRecorrenteForm.tipo || "Conta recorrente"} - Parcela ${parcela}/${quantidade}`,
-        valor: numero(contaPagarRecorrenteForm.valorParcela),
+        valor: valorParcelaRecorrente,
         statusPagamento: "A prazo",
       };
     });
@@ -1285,8 +1287,33 @@ export default function App() {
     const despesaSalva = { ...despesaForm, valor: valorFinal };
 
     if (despesaEditandoId) {
-      setDespesas(despesas.map((d) => d.id === despesaEditandoId ? { ...d, ...despesaSalva } : d));
+      const despesaOriginal = despesas.find((d) => d.id === despesaEditandoId);
+
+      if (aplicarRecorrencia && despesaOriginal?.recorrenciaGrupoId) {
+        const descricaoBase = String(despesaSalva.descricao || despesaOriginal.descricao || "")
+          .replace(/\s*-\s*Parcela\s+\d+\s*\/\s*\d+\s*$/i, "");
+
+        setDespesas(despesas.map((d) => {
+          if (d.recorrenciaGrupoId !== despesaOriginal.recorrenciaGrupoId) return d;
+
+          return {
+            ...d,
+            caminhao: despesaSalva.caminhao,
+            tipo: despesaSalva.tipo,
+            postoEmpresa: despesaSalva.postoEmpresa,
+            formaPagamento: despesaSalva.formaPagamento,
+            pagamentoPrazoComo: despesaSalva.pagamentoPrazoComo,
+            responsavelPagamento: despesaSalva.responsavelPagamento,
+            valor: despesaSalva.valor,
+            descricao: `${descricaoBase || despesaSalva.tipo || "Conta recorrente"} - Parcela ${d.parcelaAtual || "-"} / ${d.parcelaTotal || "-"}`,
+          };
+        }));
+      } else {
+        setDespesas(despesas.map((d) => d.id === despesaEditandoId ? { ...d, ...despesaSalva } : d));
+      }
+
       setDespesaEditandoId(null);
+      setAplicarRecorrencia(false);
     } else {
       setDespesas([...despesas, { id: crypto.randomUUID(), ...despesaSalva }]);
     }
@@ -1296,6 +1323,7 @@ export default function App() {
 
   const editarDespesa = (despesa) => {
     setDespesaEditandoId(despesa.id);
+    setAplicarRecorrencia(false);
     setDespesaForm({
       data: despesa.data || "",
       caminhao: despesa.caminhao || "",
@@ -1319,6 +1347,7 @@ export default function App() {
 
   const cancelarEdicaoDespesa = () => {
     setDespesaEditandoId(null);
+    setAplicarRecorrencia(false);
     setDespesaForm(despesaVazia);
   };
 
@@ -1369,7 +1398,7 @@ export default function App() {
     { id: "fluxo", nome: "Fluxo de caixa" },
     { id: "receberfixo", nome: "Contas fixas a receber" },
     { id: "despesas", nome: "Abastecimentos/Despesas" },
-    { id: "contas", nome: "Contas a pagar" },
+    { id: "contas", nome: "Despesas da empresa" },
     { id: "usuarios", nome: "Usuários" },
   ];
 
@@ -1902,6 +1931,17 @@ export default function App() {
                 <Input label="Observação" value={despesaForm.descricao} onChange={(v) => setDespesaForm({ ...despesaForm, descricao: v })} />
               </div>
 
+              {despesaEditandoId && despesas.find((d) => d.id === despesaEditandoId)?.recorrenciaGrupoId && (
+                <label className="mt-4 flex items-center gap-2 text-sm text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={aplicarRecorrencia}
+                    onChange={(e) => setAplicarRecorrencia(e.target.checked)}
+                  />
+                  Aplicar alterações principais em todas as parcelas desta recorrência
+                </label>
+              )}
+
               <button onClick={salvarDespesa} className="mt-4 bg-red-600 hover:bg-red-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2"><Save size={18} /> {despesaEditandoId ? "Salvar alterações" : "Salvar lançamento"}</button>
               {despesaEditandoId && <button onClick={cancelarEdicaoDespesa} className="mt-4 ml-2 bg-zinc-800 hover:bg-zinc-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2"><X size={18} /> Cancelar edição</button>}
             </section>
@@ -1916,7 +1956,7 @@ export default function App() {
               <Card titulo="Em aberto" valor={`${resumoContas.abertas} | ${moeda(resumoContas.valorAberto)}`} icone={CalendarDays} />
               <Card titulo="Atrasadas" valor={`${resumoContas.atrasadas} | ${moeda(resumoContas.valorAtrasado)}`} icone={Wallet} destaque />
               <Card titulo="Pagas" valor={`${resumoContas.pagas} | ${moeda(resumoContas.valorPago)}`} icone={Save} />
-              <Card titulo="Total no controle" valor={contasAPagar.length} icone={Fuel} />
+              <Card titulo="Total de despesas" valor={contasAPagar.length} icone={Fuel} />
             </div>
 
             <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
@@ -2973,7 +3013,14 @@ function ListaDespesas({ despesas, apagarDespesa, editarDespesa }) {
 
 
 
+
 function ListaContas({ despesas, editarDespesa, setDespesas, todasDespesas }) {
+  const [pagina, setPagina] = React.useState(1);
+  const [pesquisa, setPesquisa] = React.useState("");
+  const [filtroStatus, setFiltroStatus] = React.useState("Todos");
+  const [ordenarData, setOrdenarData] = React.useState("asc");
+  const porPagina = 10;
+
   const marcarComoPago = (despesa) => {
     const dataPagamento = prompt("Informe a data de pagamento no formato AAAA-MM-DD:", hojeISO());
     if (!dataPagamento) return;
@@ -2985,64 +3032,185 @@ function ListaContas({ despesas, editarDespesa, setDespesas, todasDespesas }) {
     ));
   };
 
+  const textoPesquisa = pesquisa.trim().toLowerCase();
+
+  const despesasFiltradas = [...despesas]
+    .filter((d) => filtroStatus === "Todos" || statusConta(d) === filtroStatus)
+    .filter((d) => {
+      if (!textoPesquisa) return true;
+
+      const conteudo = [
+        statusConta(d),
+        d.dataVencimento,
+        formatarData(d.dataVencimento),
+        d.dataPagamento,
+        formatarData(d.dataPagamento),
+        d.data,
+        formatarData(d.data),
+        d.responsavelPagamento,
+        d.caminhao,
+        d.tipo,
+        d.descricao,
+        d.formaPagamento,
+        d.valor,
+        moeda(d.valor),
+        d.recorrente ? `Parcela ${d.parcelaAtual} ${d.parcelaTotal}` : "",
+      ].join(" ").toLowerCase();
+
+      return conteudo.includes(textoPesquisa);
+    })
+    .sort((a, b) => {
+      const dataA = a.dataVencimento || "9999-12-31";
+      const dataB = b.dataVencimento || "9999-12-31";
+      if (dataA < dataB) return ordenarData === "asc" ? -1 : 1;
+      if (dataA > dataB) return ordenarData === "asc" ? 1 : -1;
+      return 0;
+    });
+
+  const totalPaginas = Math.max(1, Math.ceil(despesasFiltradas.length / porPagina));
+  const inicio = (pagina - 1) * porPagina;
+  const despesasPagina = despesasFiltradas.slice(inicio, inicio + porPagina);
+
+  const totalFiltrado = despesasFiltradas.reduce((s, d) => s + numero(d.valor), 0);
+
+  const apagarDespesaConta = (id) => {
+    if (!window.confirm("Tem certeza que deseja apagar esta despesa/conta?")) return;
+    setDespesas(todasDespesas.filter((d) => d.id !== id));
+  };
+
+  const apagarRecorrencia = (despesa) => {
+    if (!despesa.recorrenciaGrupoId) return;
+    if (!window.confirm("Deseja apagar todas as parcelas desta recorrência?")) return;
+    setDespesas(todasDespesas.filter((d) => d.recorrenciaGrupoId !== despesa.recorrenciaGrupoId));
+  };
+
   return (
     <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-      <h2 className="text-2xl font-black mb-4">Contas a pagar por data</h2>
-      <div className="overflow-auto">
-        <table className="w-full min-w-[1200px] text-left text-sm border-separate border-spacing-y-3">
-          <thead className="text-zinc-400">
-            <tr>
-              <th className="px-4 pb-2">Status</th>
-              <th className="px-4 pb-2">Vencimento</th>
-              <th className="px-4 pb-2">Data pagamento</th>
-              <th className="px-4 pb-2">Data lançamento</th>
-              <th className="px-4 pb-2">Empresa/cliente a pagar</th>
-              <th className="px-4 pb-2">Caminhão</th>
-              <th className="px-4 pb-2">Tipo</th>
-              <th className="px-4 pb-2">Recorrência</th>
-              <th className="px-4 pb-2">Forma de pagamento</th>
-              <th className="px-4 pb-2">Total</th>
-              <th className="px-4 pb-2">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {despesas.map((d) => {
-              const status = statusConta(d);
-              return (
-                <tr key={d.id} className="bg-zinc-950">
-                  <td className="px-4 py-4 rounded-l-2xl whitespace-nowrap">
-                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${
-                      status === "Pago" ? "bg-green-700" : status === "Atrasada" ? "bg-red-700" : "bg-yellow-700"
-                    }`}>
-                      {status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap">{formatarData(d.dataVencimento)}</td>
-                  <td className="px-4 py-4 whitespace-nowrap">{formatarData(d.dataPagamento)}</td>
-                  <td className="px-4 py-4 whitespace-nowrap">{formatarData(d.data)}</td>
-                  <td className="px-4 py-4 font-bold whitespace-nowrap">{d.responsavelPagamento || "-"}</td>
-                  <td className="px-4 py-4 whitespace-nowrap">{d.caminhao || "-"}</td>
-                  <td className="px-4 py-4 whitespace-nowrap">{d.tipo}</td>
-                  <td className="px-4 py-4 whitespace-nowrap">{d.recorrente ? `Parcela ${d.parcelaAtual || "-"} / ${d.parcelaTotal || "-"}` : "-"}</td>
-                  <td className="px-4 py-4 whitespace-nowrap">{normalizarFormaPagamento(d.formaPagamento)}</td>
-                  <td className="px-4 py-4 text-red-400 font-bold whitespace-nowrap">{moeda(d.valor)}</td>
-                  <td className="px-4 py-4 rounded-r-2xl whitespace-nowrap">
-                    <div className="flex gap-2">
-                      {status !== "Pago" && (
-                        <button onClick={() => marcarComoPago(d)} className="bg-green-700 hover:bg-green-800 rounded-xl px-3 py-2 font-bold">
-                          Marcar pago
-                        </button>
-                      )}
-                      <button onClick={() => editarDespesa(d)} className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 font-bold inline-flex items-center gap-2">
-                        <Pencil size={16} /> Editar
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+        <div>
+          <h2 className="text-2xl font-black">Despesas da empresa por data</h2>
+          <p className="text-zinc-400 text-sm">Máximo de 10 despesas por página. Total filtrado: {despesasFiltradas.length}.</p>
+        </div>
+        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 min-w-[180px]">
+          <p className="text-xs text-zinc-500">Total filtrado</p>
+          <p className="font-black text-red-400">{moeda(totalFiltrado)}</p>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-3 mb-4">
+        <Input
+          label="Pesquisar"
+          value={pesquisa}
+          onChange={(v) => {
+            setPesquisa(v);
+            setPagina(1);
+          }}
+        />
+        <Select
+          label="Status"
+          value={filtroStatus}
+          onChange={(v) => {
+            setFiltroStatus(v);
+            setPagina(1);
+          }}
+          options={["Todos", "Em aberto", "Atrasada", "Pago"]}
+        />
+        <Select
+          label="Ordenar vencimento"
+          value={ordenarData}
+          onChange={(v) => {
+            setOrdenarData(v);
+            setPagina(1);
+          }}
+          options={["asc", "desc"]}
+        />
+      </div>
+
+      <div className="grid gap-3">
+        {despesasPagina.map((d) => {
+          const status = statusConta(d);
+          const statusClass = status === "Pago" ? "bg-green-700" : status === "Atrasada" ? "bg-red-700" : "bg-yellow-700";
+          const cardClass = status === "Atrasada" ? "bg-red-950/30 border-red-800" : "bg-zinc-950 border-zinc-800";
+
+          return (
+            <div key={d.id} className={`${cardClass} border rounded-2xl p-4`}>
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    <span className={`${statusClass} rounded-full px-3 py-1 text-xs font-bold`}>{status}</span>
+                    <span className="bg-zinc-800 rounded-full px-3 py-1 text-xs">Venc.: {formatarData(d.dataVencimento)}</span>
+                    {d.recorrente && (
+                      <span className="bg-zinc-800 rounded-full px-3 py-1 text-xs">
+                        Parcela {d.parcelaAtual || "-"} / {d.parcelaTotal || "-"}
+                      </span>
+                    )}
+                    {d.dataPagamento && (
+                      <span className="bg-green-800 rounded-full px-3 py-1 text-xs">Pago: {formatarData(d.dataPagamento)}</span>
+                    )}
+                  </div>
+
+                  <h3 className="font-black text-lg">{d.responsavelPagamento || "-"}</h3>
+                  <p className="text-zinc-300 text-sm font-bold">{d.descricao || "-"}</p>
+                  <p className="text-zinc-400 text-sm mt-1">
+                    {d.tipo || "-"} • Caminhão: {d.caminhao || "-"} • Forma: {normalizarFormaPagamento(d.formaPagamento)}
+                  </p>
+                  <p className="text-zinc-500 text-xs mt-1">
+                    Lançamento: {formatarData(d.data)}
+                  </p>
+                </div>
+
+                <div className="lg:text-right">
+                  <p className="text-zinc-400 text-xs">Total</p>
+                  <p className="text-red-400 font-black text-xl">{moeda(d.valor)}</p>
+                  <div className="flex flex-wrap lg:justify-end gap-2 mt-3">
+                    {status !== "Pago" && (
+                      <button onClick={() => marcarComoPago(d)} className="bg-green-700 hover:bg-green-800 rounded-xl px-3 py-2 text-xs font-bold">
+                        Marcar pago
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    )}
+                    <button onClick={() => editarDespesa(d)} className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 text-xs font-bold">
+                      Editar
+                    </button>
+                    <button onClick={() => apagarDespesaConta(d.id)} className="bg-red-600 hover:bg-red-700 rounded-xl px-3 py-2 text-xs font-bold">
+                      Apagar
+                    </button>
+                    {d.recorrenciaGrupoId && (
+                      <button onClick={() => apagarRecorrencia(d)} className="bg-red-950 hover:bg-red-900 border border-red-800 rounded-xl px-3 py-2 text-xs font-bold">
+                        Apagar recorrência
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {despesasPagina.length === 0 && (
+          <p className="text-zinc-400 py-6">Nenhuma despesa encontrada.</p>
+        )}
+      </div>
+
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mt-5">
+        <p className="text-zinc-400 text-sm">
+          Página {pagina} de {totalPaginas}
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setPagina(Math.max(1, pagina - 1))}
+            disabled={pagina === 1}
+            className="bg-zinc-800 disabled:opacity-40 hover:bg-zinc-700 rounded-xl px-4 py-2 font-bold"
+          >
+            Anterior
+          </button>
+          <button
+            onClick={() => setPagina(Math.min(totalPaginas, pagina + 1))}
+            disabled={pagina === totalPaginas}
+            className="bg-zinc-800 disabled:opacity-40 hover:bg-zinc-700 rounded-xl px-4 py-2 font-bold"
+          >
+            Próxima
+          </button>
+        </div>
       </div>
     </section>
   );
