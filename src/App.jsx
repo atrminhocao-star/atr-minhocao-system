@@ -2403,6 +2403,7 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
   );
 }
 
+
 function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, desfazerPagamentoFrete }) {
   const [ordenacao, setOrdenacao] = React.useState({
     campo: "data",
@@ -2481,70 +2482,77 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
       <div className="grid gap-3">
         {viagensPagina.map((v) => {
           const estaAtrasado = freteEmAtraso(v);
+
           return (
-          <div key={v.id} className={`${estaAtrasado ? "bg-red-950/40 border-red-700" : "bg-zinc-950 border-zinc-800"} border rounded-2xl p-4`}>
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex flex-wrap gap-2 mb-2">
-                  <span className="bg-red-600 rounded-full px-3 py-1 text-xs font-bold">{formatarData(v.data)}</span>
-                  <span className="bg-zinc-800 rounded-full px-3 py-1 text-xs">Pedido: {v.numeroPedido || "Não informado"}</span>
-                  <span className="bg-zinc-800 rounded-full px-3 py-1 text-xs">{v.status || "-"}</span>
-                  {v.fretePago && (
-                    <span className="bg-green-800 rounded-full px-3 py-1 text-xs">Pago: {formatarData(v.dataPagamentoFrete)}</span>
-                  )}
-                  {!v.fretePago && v.previsaoPagamento && (
-                    <span className={`${estaAtrasado ? "bg-red-600" : "bg-green-800"} rounded-full px-3 py-1 text-xs font-bold`}>
-                      {estaAtrasado ? "EM ATRASO" : "Dentro do prazo"}
-                    </span>
-                  )}
+            <div key={v.id} className={`${estaAtrasado ? "bg-red-950/40 border-red-700" : "bg-zinc-950 border-zinc-800"} border rounded-2xl p-4`}>
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    <span className="bg-red-600 rounded-full px-3 py-1 text-xs font-bold">{formatarData(v.data)}</span>
+                    <span className="bg-zinc-800 rounded-full px-3 py-1 text-xs">Pedido: {v.numeroPedido || "Não informado"}</span>
+                    <span className="bg-zinc-800 rounded-full px-3 py-1 text-xs">{v.status || "-"}</span>
+
+                    {v.fretePago && (
+                      <span className="bg-green-800 rounded-full px-3 py-1 text-xs">Pago: {formatarData(v.dataPagamentoFrete)}</span>
+                    )}
+
+                    {!v.fretePago && v.previsaoPagamento && (
+                      <span className={`${estaAtrasado ? "bg-red-600" : "bg-green-800"} rounded-full px-3 py-1 text-xs font-bold`}>
+                        {estaAtrasado ? "EM ATRASO" : "Dentro do prazo"}
+                      </span>
+                    )}
+                  </div>
+
+                  <h3 className="font-black text-lg">{v.cliente || "-"}</h3>
+                  <p className="text-zinc-400 text-sm">
+                    {v.caminhao || "-"} • {v.material || "-"} • {v.quantidade ? `${v.quantidade} ${v.unidade || ""}` : "Quantidade não informada"}
+                  </p>
+                  <p className="text-zinc-300 text-sm mt-1">
+                    {v.origem || "-"} → {v.destino || "-"}
+                  </p>
+                  <p className={`${estaAtrasado ? "text-red-300 font-bold" : "text-zinc-500"} text-xs mt-1`}>
+                    Previsão pagamento: {formatarData(v.previsaoPagamento)}
+                  </p>
                 </div>
 
-                <h3 className="font-black text-lg">{v.cliente || "-"}</h3>
-                <p className="text-zinc-400 text-sm">
-                  {v.caminhao || "-"} • {v.material || "-"} • {v.quantidade ? `${v.quantidade} ${v.unidade || ""}` : "Quantidade não informada"}
-                </p>
-                <p className="text-zinc-300 text-sm mt-1">
-                  {v.origem || "-"} → {v.destino || "-"}
-                </p>
-                <p className="text-zinc-500 text-xs mt-1">
-                  Previsão pagamento: {formatarData(v.previsaoPagamento)}
-                </p>
-              </div>
-
-              <div className="lg:text-right">
-                <p className="text-zinc-400 text-xs">Frete</p>
-                <p className="text-red-400 font-black text-xl">{moeda(v.frete)}</p>
-                <div className="flex flex-wrap lg:justify-end gap-2 mt-3">
-                  {marcarFretePago && !v.fretePago && (
-                    <button onClick={() => marcarFretePago(v)} className="bg-green-700 hover:bg-green-800 rounded-xl px-3 py-2 text-xs font-bold">
-                      Marcar pago
-                    </button>
-                  )}
-                  {marcarFretePago && v.fretePago && (
-                    <>
-                      <button onClick={() => marcarFretePago(v)} className="bg-green-900 hover:bg-green-800 rounded-xl px-3 py-2 text-xs font-bold text-green-200">
-                        Alterar data pagamento
+                <div className="lg:text-right">
+                  <p className="text-zinc-400 text-xs">Frete</p>
+                  <p className={`${estaAtrasado ? "text-red-300" : "text-red-400"} font-black text-xl`}>{moeda(v.frete)}</p>
+                  <div className="flex flex-wrap lg:justify-end gap-2 mt-3">
+                    {marcarFretePago && !v.fretePago && (
+                      <button onClick={() => marcarFretePago(v)} className="bg-green-700 hover:bg-green-800 rounded-xl px-3 py-2 text-xs font-bold">
+                        Marcar pago
                       </button>
-                      {desfazerPagamentoFrete && (
-                        <button onClick={() => desfazerPagamentoFrete(v)} className="bg-yellow-700 hover:bg-yellow-800 rounded-xl px-3 py-2 text-xs font-bold">
-                          Desfazer pagamento
+                    )}
+
+                    {marcarFretePago && v.fretePago && (
+                      <>
+                        <button onClick={() => marcarFretePago(v)} className="bg-green-900 hover:bg-green-800 rounded-xl px-3 py-2 text-xs font-bold text-green-200">
+                          Alterar data pagamento
                         </button>
-                      )}
-                    </>
-                  )}
-                  {editarViagem && (
-                    <button onClick={() => editarViagem(v)} className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 text-xs font-bold">
-                      Editar
+                        {desfazerPagamentoFrete && (
+                          <button onClick={() => desfazerPagamentoFrete(v)} className="bg-yellow-700 hover:bg-yellow-800 rounded-xl px-3 py-2 text-xs font-bold">
+                            Desfazer pagamento
+                          </button>
+                        )}
+                      </>
+                    )}
+
+                    {editarViagem && (
+                      <button onClick={() => editarViagem(v)} className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 text-xs font-bold">
+                        Editar
+                      </button>
+                    )}
+
+                    <button onClick={() => apagarViagem(v.id)} className="bg-red-600 hover:bg-red-700 rounded-xl px-3 py-2 text-xs font-bold">
+                      Apagar
                     </button>
-                  )}
-                  <button onClick={() => apagarViagem(v.id)} className="bg-red-600 hover:bg-red-700 rounded-xl px-3 py-2 text-xs font-bold">
-                    Apagar
-                  </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {viagensPagina.length === 0 && (
           <p className="text-zinc-400 py-6">Nenhuma viagem cadastrada para exibir.</p>
