@@ -2406,6 +2406,7 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
     direcao: "desc",
   });
   const [pagina, setPagina] = React.useState(1);
+  const [pesquisa, setPesquisa] = React.useState("");
   const porPagina = 10;
 
   const alternarOrdenacao = (campo) => {
@@ -2422,7 +2423,38 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
     Finalizada: 3,
   };
 
-  const viagensOrdenadas = [...viagens].sort((a, b) => {
+  const textoPesquisa = pesquisa.trim().toLowerCase();
+
+  const viagensFiltradasPorPesquisa = [...viagens].filter((v) => {
+    if (!textoPesquisa) return true;
+
+    const conteudo = [
+      v.data,
+      formatarData(v.data),
+      v.createdAt,
+      formatarData(String(v.createdAt || "").slice(0, 10)),
+      v.numeroPedido,
+      v.cliente,
+      v.caminhao,
+      v.material,
+      v.origem,
+      v.destino,
+      v.quantidade,
+      v.unidade,
+      v.frete,
+      moeda(v.frete),
+      v.previsaoPagamento,
+      formatarData(v.previsaoPagamento),
+      v.status,
+      statusPrazoFrete(v),
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return conteudo.includes(textoPesquisa);
+  });
+
+  const viagensOrdenadas = viagensFiltradasPorPesquisa.sort((a, b) => {
     let valorA = a[ordenacao.campo] || "";
     let valorB = b[ordenacao.campo] || "";
 
@@ -2462,7 +2494,7 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
         <div>
           <h2 className="text-2xl font-black">Viagens cadastradas</h2>
           <p className="text-zinc-400 text-sm">
-            Exibindo até 10 viagens por página. Total: {viagensOrdenadas.length}.
+            Exibindo até 10 viagens por página. Total filtrado: {viagensOrdenadas.length}.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -2473,6 +2505,20 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
           <BotaoOrdenar campo="frete">Frete</BotaoOrdenar>
           <BotaoOrdenar campo="status">Status</BotaoOrdenar>
         </div>
+      </div>
+
+      <div className="mb-4">
+        <Input
+          label="Pesquisar nas viagens/fretes"
+          value={pesquisa}
+          onChange={(v) => {
+            setPesquisa(v);
+            setPagina(1);
+          }}
+        />
+        <p className="text-zinc-500 text-xs mt-2">
+          Pesquise por pedido, cliente, caminhão, material, origem, destino, valor, status ou previsão de pagamento.
+        </p>
       </div>
 
       <div className="grid gap-3">
@@ -2542,7 +2588,7 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
         ))}
 
         {viagensPagina.length === 0 && (
-          <p className="text-zinc-400 py-6">Nenhuma viagem cadastrada para exibir.</p>
+          <p className="text-zinc-400 py-6">Nenhuma viagem encontrada para a pesquisa/filtro atual.</p>
         )}
       </div>
 
