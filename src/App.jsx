@@ -2020,6 +2020,149 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
     janela.focus();
   };
 
+
+  const emitirPdfDespesasPorCaminhao = () => {
+    const saidas = fluxoFiltrado.filter((item) => item.tipo === "Saída");
+
+    const grupos = saidas.reduce((acc, item) => {
+      const caminhao = item.caminhao || "Sem caminhão";
+      if (!acc[caminhao]) acc[caminhao] = { total: 0, itens: [] };
+      acc[caminhao].total += numero(item.valor);
+      acc[caminhao].itens.push(item);
+      return acc;
+    }, {});
+
+    const conteudo = Object.entries(grupos).map(([caminhao, grupo]) => `
+      <h3>${caminhao} - Total: ${moeda(grupo.total)}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Empresa</th>
+            <th>Descrição</th>
+            <th>Origem</th>
+            <th>Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${grupo.itens.map((item) => `
+            <tr>
+              <td>${formatarData(item.data)}</td>
+              <td>${item.cliente || "-"}</td>
+              <td>${item.descricao || "-"}</td>
+              <td>${item.origem || "-"}</td>
+              <td>${moeda(item.valor)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `).join("");
+
+    const totalGeral = saidas.reduce((s, item) => s + numero(item.valor), 0);
+
+    const html = `
+      <html>
+        <head>
+          <title>Despesas por caminhão - ATR MINHOCÃO</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; color: #111; }
+            h1 { color: #d71920; }
+            h3 { margin-top: 24px; color: #333; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+            th { background: #d71920; color: white; padding: 8px; text-align: left; }
+            td { border-bottom: 1px solid #ddd; padding: 8px; }
+            @media print { button { display: none; } }
+          </style>
+        </head>
+        <body>
+          <button onclick="window.print()" style="padding:10px 16px;background:#d71920;color:white;border:0;border-radius:8px;font-weight:bold;">
+            Salvar PDF
+          </button>
+          <h1>ATR MINHOCÃO</h1>
+          <h2>Relatório de despesas por caminhão</h2>
+          <p><strong>Total geral:</strong> ${moeda(totalGeral)}</p>
+          ${conteudo || "<p>Nenhuma despesa encontrada para o filtro atual.</p>"}
+        </body>
+      </html>
+    `;
+
+    const janela = window.open("", "_blank");
+    janela.document.write(html);
+    janela.document.close();
+    janela.focus();
+  };
+
+  const emitirPdfEntradasPorEmpresa = () => {
+    const entradas = fluxoFiltrado.filter((item) => item.tipo === "Entrada");
+
+    const grupos = entradas.reduce((acc, item) => {
+      const empresa = item.cliente || "Sem empresa";
+      if (!acc[empresa]) acc[empresa] = { total: 0, itens: [] };
+      acc[empresa].total += numero(item.valor);
+      acc[empresa].itens.push(item);
+      return acc;
+    }, {});
+
+    const conteudo = Object.entries(grupos).map(([empresa, grupo]) => `
+      <h3>${empresa} - Total: ${moeda(grupo.total)}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Caminhão</th>
+            <th>Descrição</th>
+            <th>Origem</th>
+            <th>Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${grupo.itens.map((item) => `
+            <tr>
+              <td>${formatarData(item.data)}</td>
+              <td>${item.caminhao || "-"}</td>
+              <td>${item.descricao || "-"}</td>
+              <td>${item.origem || "-"}</td>
+              <td>${moeda(item.valor)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `).join("");
+
+    const totalGeral = entradas.reduce((s, item) => s + numero(item.valor), 0);
+
+    const html = `
+      <html>
+        <head>
+          <title>Entradas por empresa - ATR MINHOCÃO</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; color: #111; }
+            h1 { color: #d71920; }
+            h3 { margin-top: 24px; color: #333; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+            th { background: #d71920; color: white; padding: 8px; text-align: left; }
+            td { border-bottom: 1px solid #ddd; padding: 8px; }
+            @media print { button { display: none; } }
+          </style>
+        </head>
+        <body>
+          <button onclick="window.print()" style="padding:10px 16px;background:#d71920;color:white;border:0;border-radius:8px;font-weight:bold;">
+            Salvar PDF
+          </button>
+          <h1>ATR MINHOCÃO</h1>
+          <h2>Relatório de entradas por empresa</h2>
+          <p><strong>Total geral:</strong> ${moeda(totalGeral)}</p>
+          ${conteudo || "<p>Nenhuma entrada encontrada para o filtro atual.</p>"}
+        </body>
+      </html>
+    `;
+
+    const janela = window.open("", "_blank");
+    janela.document.write(html);
+    janela.document.close();
+    janela.focus();
+  };
+
   return (
     <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
@@ -2027,9 +2170,17 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
           <h2 className="text-2xl font-black">Movimentações do fluxo de caixa</h2>
           <p className="text-zinc-400 text-sm">Máximo de 10 movimentações por página.</p>
         </div>
-        <button onClick={emitirPdfFiltrado} className="bg-red-600 hover:bg-red-700 rounded-2xl px-4 py-2 font-bold">
-          Emitir PDF filtrado
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={emitirPdfFiltrado} className="bg-red-600 hover:bg-red-700 rounded-2xl px-4 py-2 font-bold">
+            PDF fluxo filtrado
+          </button>
+          <button onClick={emitirPdfDespesasPorCaminhao} className="bg-zinc-800 hover:bg-zinc-700 rounded-2xl px-4 py-2 font-bold">
+            PDF despesas por caminhão
+          </button>
+          <button onClick={emitirPdfEntradasPorEmpresa} className="bg-zinc-800 hover:bg-zinc-700 rounded-2xl px-4 py-2 font-bold">
+            PDF entradas por empresa
+          </button>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-4 gap-3 mb-4">
