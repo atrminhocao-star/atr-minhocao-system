@@ -1300,7 +1300,6 @@ export default function App() {
     { id: "materiais", nome: "Materiais" },
     { id: "caminhoes", nome: "Caminhões" },
     { id: "viagens", nome: "Viagens" },
-    { id: "relatorios", nome: "Relatórios" },
     { id: "fluxo", nome: "Fluxo de caixa" },
     { id: "receberfixo", nome: "Contas fixas a receber" },
     { id: "despesas", nome: "Abastecimentos/Despesas" },
@@ -2456,8 +2455,15 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
       const okCaminhao = !filtros.caminhao || v.caminhao === filtros.caminhao;
 
       let okPagamento = true;
-      if (filtros.pagamento === "Pago") okPagamento = !!v.fretePago;
-      if (filtros.pagamento === "Não pago") okPagamento = !v.fretePago;
+      if (filtros.pagamento === "Pago") {
+        okPagamento = !!v.fretePago;
+      }
+      if (filtros.pagamento === "Não pago e dentro do prazo") {
+        okPagamento = !v.fretePago && !freteEmAtraso(v);
+      }
+      if (filtros.pagamento === "Em atraso") {
+        okPagamento = freteEmAtraso(v);
+      }
 
       return okViagemInicio && okViagemFim && okPrevisaoInicio && okPrevisaoFim && okCliente && okCaminhao && okPagamento;
     })
@@ -2568,7 +2574,7 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
       filtros.previsaoFim ? `Previsão final: ${formatarData(filtros.previsaoFim)}` : null,
       filtros.cliente ? `Cliente: ${filtros.cliente}` : null,
       filtros.caminhao ? `Caminhão: ${filtros.caminhao}` : null,
-      filtros.pagamento ? `Pagamento: ${filtros.pagamento}` : null,
+      filtros.pagamento ? `Status do pagamento: ${filtros.pagamento}` : null,
       pesquisa ? `Pesquisa: ${pesquisa}` : null,
     ].filter(Boolean).join(" | ") || "Sem filtros";
 
@@ -2703,7 +2709,7 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
           <div className="grid md:grid-cols-3 gap-3">
             <Select label="Cliente" value={filtros.cliente} onChange={(v) => { setFiltros({ ...filtros, cliente: v }); setPagina(1); }} options={clientesDisponiveis} />
             <Select label="Caminhão" value={filtros.caminhao} onChange={(v) => { setFiltros({ ...filtros, caminhao: v }); setPagina(1); }} options={caminhoesDisponiveis} />
-            <Select label="Pagamento" value={filtros.pagamento} onChange={(v) => { setFiltros({ ...filtros, pagamento: v }); setPagina(1); }} options={["Pago", "Não pago"]} />
+            <Select label="Pagamento" value={filtros.pagamento} onChange={(v) => { setFiltros({ ...filtros, pagamento: v }); setPagina(1); }} options={["Pago", "Não pago e dentro do prazo", "Em atraso"]} />
           </div>
 
           <button onClick={limparFiltros} className="mt-3 bg-zinc-800 hover:bg-zinc-700 rounded-xl px-4 py-2 font-bold">
