@@ -14,7 +14,21 @@ const moeda = (valor) => {
 
 const numero = (valor) => {
   if (valor === null || valor === undefined || valor === "") return 0;
-  const convertido = Number(String(valor).replace(",", "."));
+  if (typeof valor === "number") return Number.isNaN(valor) ? 0 : valor;
+
+  let texto = String(valor).trim();
+  texto = texto.replace(/R\$/g, "").replace(/\s/g, "");
+
+  const temVirgula = texto.includes(",");
+  const temPonto = texto.includes(".");
+
+  if (temVirgula && temPonto) {
+    texto = texto.replace(/\./g, "").replace(",", ".");
+  } else if (temVirgula) {
+    texto = texto.replace(",", ".");
+  }
+
+  const convertido = Number(texto);
   return Number.isNaN(convertido) ? 0 : convertido;
 };
 
@@ -1274,7 +1288,10 @@ export default function App() {
   const salvarDespesa = () => {
     if (!despesaForm.data || !despesaForm.tipo) return alert("Informe data e tipo da despesa.");
 
-    let valorFinal = numero(despesaForm.valor);
+    const despesaOriginalAtual = despesaEditandoId ? despesas.find((d) => d.id === despesaEditandoId) : null;
+    let valorFinal = despesaForm.valor === "" || despesaForm.valor === null || despesaForm.valor === undefined
+      ? numero(despesaOriginalAtual?.valor)
+      : numero(despesaForm.valor);
 
     if (despesaForm.tipo === "Combustível" && despesaForm.litros && despesaForm.valorLitro) {
       valorFinal = numero(despesaForm.litros) * numero(despesaForm.valorLitro);
@@ -1344,7 +1361,7 @@ export default function App() {
       dataPagamento: despesa.dataPagamento || "",
       responsavelPagamento: despesa.responsavelPagamento || "",
       descricao: despesa.descricao || "",
-      valor: despesa.valor || "",
+      valor: despesa.valor || despesa.valor === 0 ? numero(despesa.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "",
       statusPagamento: despesa.statusPagamento || "Pago",
     });
     setAba("contas");
@@ -1892,7 +1909,7 @@ export default function App() {
                   <Select label="Empresa/cliente a pagar" value={despesaForm.responsavelPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, responsavelPagamento: v })} options={clientes.map(c => c.nome)} />
 
                   <Input label="Descrição" value={despesaForm.descricao} onChange={(v) => setDespesaForm({ ...despesaForm, descricao: v })} />
-                  <Input label="Valor R$" value={String(despesaForm.valor ?? "")} onChange={(v) => setDespesaForm({ ...despesaForm, valor: formatarValorDigitado(v) })} />
+                  <Input label="Valor R$" value={despesaForm.valor === 0 || despesaForm.valor ? String(despesaForm.valor) : ""} onChange={(v) => setDespesaForm({ ...despesaForm, valor: formatarValorDigitado(v) })} />
                   <Select label="Status do pagamento" value={despesaForm.statusPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, statusPagamento: v })} options={["Pago", "A prazo", "Pendente"]} />
                   <Select label="Forma de pagamento" value={despesaForm.formaPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, formaPagamento: v })} options={["Dinheiro", "Pix", "Cartão", "Boleto", "A prazo", "Desconto em folha", "Outro"]} />
 
