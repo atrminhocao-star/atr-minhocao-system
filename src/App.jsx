@@ -2418,7 +2418,7 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
     inicio: "",
     fim: "",
     cliente: "",
-    prazo: "",
+    caminhao: "",
     pagamento: "",
   });
   const porPagina = 10;
@@ -2438,6 +2438,7 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
   };
 
   const clientesDisponiveis = Array.from(new Set(viagens.map((v) => v.cliente).filter(Boolean))).sort();
+  const caminhoesDisponiveis = Array.from(new Set(viagens.map((v) => v.caminhao).filter(Boolean))).sort();
 
   const textoPesquisa = pesquisa.trim().toLowerCase();
 
@@ -2448,13 +2449,13 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
       const okInicio = !filtros.inicio || v.previsaoPagamento >= filtros.inicio;
       const okFim = !filtros.fim || v.previsaoPagamento <= filtros.fim;
       const okCliente = !filtros.cliente || v.cliente === filtros.cliente;
-      const okPrazo = !filtros.prazo || statusPrazoFrete(v) === filtros.prazo;
+      const okCaminhao = !filtros.caminhao || v.caminhao === filtros.caminhao;
 
       let okPagamento = true;
       if (filtros.pagamento === "Pago") okPagamento = !!v.fretePago;
       if (filtros.pagamento === "Não pago") okPagamento = !v.fretePago;
 
-      return okInicio && okFim && okCliente && okPrazo && okPagamento;
+      return okInicio && okFim && okCliente && okCaminhao && okPagamento;
     })
     .filter((v) => {
       if (!textoPesquisa) return true;
@@ -2534,9 +2535,90 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
   );
 
   const limparFiltros = () => {
-    setFiltros({ inicio: "", fim: "", cliente: "", prazo: "", pagamento: "" });
+    setFiltros({ inicio: "", fim: "", cliente: "", caminhao: "", pagamento: "" });
     setPesquisa("");
     setPagina(1);
+  };
+
+  const emitirPdfViagensFiltradas = () => {
+    const linhas = viagensOrdenadas.map((v) => `
+      <tr>
+        <td>${formatarData(v.data)}</td>
+        <td>${v.numeroPedido || "-"}</td>
+        <td>${v.cliente || "-"}</td>
+        <td>${v.caminhao || "-"}</td>
+        <td>${v.material || "-"}</td>
+        <td>${v.origem || "-"}</td>
+        <td>${v.destino || "-"}</td>
+        <td>${v.quantidade || "-"} ${v.unidade || ""}</td>
+        <td>${moeda(v.frete)}</td>
+        <td>${formatarData(v.previsaoPagamento)}</td>
+        <td>${v.fretePago ? "Pago em " + formatarData(v.dataPagamentoFrete) : "Não pago"}</td>
+      </tr>
+    `).join("");
+
+    const filtrosTexto = [
+      filtros.inicio ? `Previsão inicial: ${formatarData(filtros.inicio)}` : null,
+      filtros.fim ? `Previsão final: ${formatarData(filtros.fim)}` : null,
+      filtros.cliente ? `Cliente: ${filtros.cliente}` : null,
+      filtros.caminhao ? `Caminhão: ${filtros.caminhao}` : null,
+      filtros.pagamento ? `Pagamento: ${filtros.pagamento}` : null,
+      pesquisa ? `Pesquisa: ${pesquisa}` : null,
+    ].filter(Boolean).join(" | ") || "Sem filtros";
+
+    const html = `
+      <html>
+        <head>
+          <title>Relatório de viagens - ATR MINHOCÃO</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; color: #111; }
+            h1 { color: #d71920; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 16px; }
+            th { background: #d71920; color: white; padding: 7px; text-align: left; }
+            td { border-bottom: 1px solid #ddd; padding: 7px; }
+            .resumo { margin: 12px 0; }
+            @media print { button { display: none; } }
+          </style>
+        </head>
+        <body>
+          <button onclick="window.print()" style="padding:10px 16px;background:#d71920;color:white;border:0;border-radius:8px;font-weight:bold;">
+            Salvar PDF
+          </button>
+          <h1>ATR MINHOCÃO</h1>
+          <h2>Relatório de viagens filtradas</h2>
+          <p><strong>Filtros:</strong> ${filtrosTexto}</p>
+          <div class="resumo">
+            <strong>Total filtrado:</strong> ${moeda(totalFiltrado)} |
+            <strong>A receber:</strong> ${moeda(totalAReceber)} |
+            <strong>Recebido:</strong> ${moeda(totalRecebido)} |
+            <strong>Em atraso:</strong> ${moeda(totalEmAtraso)}
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Pedido</th>
+                <th>Cliente</th>
+                <th>Caminhão</th>
+                <th>Material</th>
+                <th>Origem</th>
+                <th>Destino</th>
+                <th>Quantidade</th>
+                <th>Frete</th>
+                <th>Previsão</th>
+                <th>Pagamento</th>
+              </tr>
+            </thead>
+            <tbody>${linhas || `<tr><td colspan="11">Nenhuma viagem encontrada.</td></tr>`}</tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    const janela = window.open("", "_blank");
+    janela.document.write(html);
+    janela.document.close();
+    janela.focus();
   };
 
   return (
@@ -2595,14 +2677,21 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
 
       {filtrosAvancados && (
         <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 mb-4">
-          <h3 className="font-black mb-3">Filtros de pagamento e prazo</h3>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+            <h3 className="font-black">Filtros de viagens e pagamentos</h3>
+            <button onClick={emitirPdfViagensFiltradas} className="bg-red-600 hover:bg-red-700 rounded-xl px-4 py-2 font-bold">
+              Emitir PDF dos filtros
+            </button>
+          </div>
+
           <div className="grid md:grid-cols-5 gap-3">
             <Input label="Previsão inicial" type="date" value={filtros.inicio} onChange={(v) => { setFiltros({ ...filtros, inicio: v }); setPagina(1); }} />
             <Input label="Previsão final" type="date" value={filtros.fim} onChange={(v) => { setFiltros({ ...filtros, fim: v }); setPagina(1); }} />
             <Select label="Cliente" value={filtros.cliente} onChange={(v) => { setFiltros({ ...filtros, cliente: v }); setPagina(1); }} options={clientesDisponiveis} />
-            <Select label="Prazo" value={filtros.prazo} onChange={(v) => { setFiltros({ ...filtros, prazo: v }); setPagina(1); }} options={["Em atraso", "Dentro do prazo"]} />
+            <Select label="Caminhão" value={filtros.caminhao} onChange={(v) => { setFiltros({ ...filtros, caminhao: v }); setPagina(1); }} options={caminhoesDisponiveis} />
             <Select label="Pagamento" value={filtros.pagamento} onChange={(v) => { setFiltros({ ...filtros, pagamento: v }); setPagina(1); }} options={["Pago", "Não pago"]} />
           </div>
+
           <button onClick={limparFiltros} className="mt-3 bg-zinc-800 hover:bg-zinc-700 rounded-xl px-4 py-2 font-bold">
             Limpar filtros
           </button>
