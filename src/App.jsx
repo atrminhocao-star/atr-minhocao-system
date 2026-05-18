@@ -260,6 +260,17 @@ export default function App() {
     dataPrimeiraParcela: "",
   });
 
+  const [contaPagarRecorrenteForm, setContaPagarRecorrenteForm] = useState({
+    responsavelPagamento: "",
+    descricao: "",
+    tipo: "Salário",
+    caminhao: "",
+    valorParcela: "",
+    quantidadeParcelas: "",
+    dataPrimeiraParcela: "",
+    formaPagamento: "Pix",
+  });
+
   const [despesaForm, setDespesaForm] = useState(despesaVazia);
   const [despesaEditandoId, setDespesaEditandoId] = useState(null);
 
@@ -1198,6 +1209,61 @@ export default function App() {
     setViagens(viagens.filter((v) => v.id !== id));
   };
 
+
+  const salvarContaPagarRecorrente = () => {
+    if (!contaPagarRecorrenteForm.responsavelPagamento || !contaPagarRecorrenteForm.valorParcela || !contaPagarRecorrenteForm.quantidadeParcelas || !contaPagarRecorrenteForm.dataPrimeiraParcela) {
+      return alert("Informe empresa/pessoa, valor, quantidade de parcelas e data da primeira parcela.");
+    }
+
+    const quantidade = Number(contaPagarRecorrenteForm.quantidadeParcelas);
+    if (!quantidade || quantidade < 1) {
+      return alert("Quantidade de parcelas inválida.");
+    }
+
+    const grupoId = crypto.randomUUID();
+
+    const novasContas = Array.from({ length: quantidade }, (_, index) => {
+      const parcela = index + 1;
+      const dataVencimento = somarMeses(contaPagarRecorrenteForm.dataPrimeiraParcela, index);
+
+      return {
+        id: crypto.randomUUID(),
+        recorrenciaGrupoId: grupoId,
+        recorrente: true,
+        parcelaAtual: parcela,
+        parcelaTotal: quantidade,
+        data: hojeISO(),
+        caminhao: contaPagarRecorrenteForm.caminhao || "",
+        tipo: contaPagarRecorrenteForm.tipo || "Outros",
+        litros: "",
+        valorLitro: "",
+        kmPainel: "",
+        postoEmpresa: contaPagarRecorrenteForm.responsavelPagamento || "",
+        formaPagamento: contaPagarRecorrenteForm.formaPagamento || "Pix",
+        pagamentoPrazoComo: "Recorrência",
+        dataVencimento,
+        dataPagamento: "",
+        responsavelPagamento: contaPagarRecorrenteForm.responsavelPagamento,
+        descricao: `${contaPagarRecorrenteForm.descricao || contaPagarRecorrenteForm.tipo || "Conta recorrente"} - Parcela ${parcela}/${quantidade}`,
+        valor: numero(contaPagarRecorrenteForm.valorParcela),
+        statusPagamento: "A prazo",
+      };
+    });
+
+    setDespesas([...despesas, ...novasContas]);
+
+    setContaPagarRecorrenteForm({
+      responsavelPagamento: "",
+      descricao: "",
+      tipo: "Salário",
+      caminhao: "",
+      valorParcela: "",
+      quantidadeParcelas: "",
+      dataPrimeiraParcela: "",
+      formaPagamento: "Pix",
+    });
+  };
+
   const salvarDespesa = () => {
     if (!despesaForm.data || !despesaForm.caminhao || !despesaForm.tipo) return alert("Informe data, caminhão e tipo da despesa.");
 
@@ -1852,6 +1918,28 @@ export default function App() {
               <Card titulo="Pagas" valor={`${resumoContas.pagas} | ${moeda(resumoContas.valorPago)}`} icone={Save} />
               <Card titulo="Total no controle" valor={contasAPagar.length} icone={Fuel} />
             </div>
+
+            <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+              <h2 className="text-2xl font-black mb-1">Nova conta recorrente a pagar</h2>
+              <p className="text-zinc-400 mb-4">Use para salário de motorista, aluguel, contador, financiamento e outras contas mensais.</p>
+
+              <div className="grid md:grid-cols-4 gap-3">
+                <Select label="Empresa/pessoa a pagar" value={contaPagarRecorrenteForm.responsavelPagamento} onChange={(v) => setContaPagarRecorrenteForm({ ...contaPagarRecorrenteForm, responsavelPagamento: v })} options={clientes.map(c => c.nome)} />
+                <Select label="Tipo" value={contaPagarRecorrenteForm.tipo} onChange={(v) => setContaPagarRecorrenteForm({ ...contaPagarRecorrenteForm, tipo: v })} options={["Salário", "Aluguel", "Contador", "Financiamento", "Imposto", "Seguro", "Manutenção", "Outros"]} />
+                <Select label="Caminhão vinculado" value={contaPagarRecorrenteForm.caminhao} onChange={(v) => setContaPagarRecorrenteForm({ ...contaPagarRecorrenteForm, caminhao: v })} options={caminhoes.map(c => c.placa)} />
+                <Select label="Forma de pagamento" value={contaPagarRecorrenteForm.formaPagamento} onChange={(v) => setContaPagarRecorrenteForm({ ...contaPagarRecorrenteForm, formaPagamento: v })} options={["Dinheiro", "Pix", "Cartão", "Boleto", "A prazo", "Desconto em folha", "Outro"]} />
+
+                <Input label="Descrição" value={contaPagarRecorrenteForm.descricao} onChange={(v) => setContaPagarRecorrenteForm({ ...contaPagarRecorrenteForm, descricao: v })} />
+                <Input label="Valor de cada parcela R$" value={contaPagarRecorrenteForm.valorParcela} onChange={(v) => setContaPagarRecorrenteForm({ ...contaPagarRecorrenteForm, valorParcela: formatarValorDigitado(v) })} />
+                <Input label="Quantidade de parcelas/meses" value={contaPagarRecorrenteForm.quantidadeParcelas} onChange={(v) => setContaPagarRecorrenteForm({ ...contaPagarRecorrenteForm, quantidadeParcelas: v })} />
+                <Input label="Primeiro vencimento" type="date" value={contaPagarRecorrenteForm.dataPrimeiraParcela} onChange={(v) => setContaPagarRecorrenteForm({ ...contaPagarRecorrenteForm, dataPrimeiraParcela: v })} />
+              </div>
+
+              <button onClick={salvarContaPagarRecorrente} className="mt-4 bg-red-600 hover:bg-red-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2">
+                <Save size={18} /> Gerar contas recorrentes
+              </button>
+            </section>
+
             <ListaContas despesas={contasAPagar} editarDespesa={editarDespesa} setDespesas={setDespesas} todasDespesas={despesas} />
           </div>
         )}
@@ -2911,6 +2999,7 @@ function ListaContas({ despesas, editarDespesa, setDespesas, todasDespesas }) {
               <th className="px-4 pb-2">Empresa/cliente a pagar</th>
               <th className="px-4 pb-2">Caminhão</th>
               <th className="px-4 pb-2">Tipo</th>
+              <th className="px-4 pb-2">Recorrência</th>
               <th className="px-4 pb-2">Forma de pagamento</th>
               <th className="px-4 pb-2">Total</th>
               <th className="px-4 pb-2">Ações</th>
@@ -2934,6 +3023,7 @@ function ListaContas({ despesas, editarDespesa, setDespesas, todasDespesas }) {
                   <td className="px-4 py-4 font-bold whitespace-nowrap">{d.responsavelPagamento || "-"}</td>
                   <td className="px-4 py-4 whitespace-nowrap">{d.caminhao || "-"}</td>
                   <td className="px-4 py-4 whitespace-nowrap">{d.tipo}</td>
+                  <td className="px-4 py-4 whitespace-nowrap">{d.recorrente ? `Parcela ${d.parcelaAtual || "-"} / ${d.parcelaTotal || "-"}` : "-"}</td>
                   <td className="px-4 py-4 whitespace-nowrap">{normalizarFormaPagamento(d.formaPagamento)}</td>
                   <td className="px-4 py-4 text-red-400 font-bold whitespace-nowrap">{moeda(d.valor)}</td>
                   <td className="px-4 py-4 rounded-r-2xl whitespace-nowrap">
