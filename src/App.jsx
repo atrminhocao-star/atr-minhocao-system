@@ -2415,8 +2415,10 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
   const [pagina, setPagina] = React.useState(1);
   const [pesquisa, setPesquisa] = React.useState("");
   const [filtros, setFiltros] = React.useState({
-    inicio: "",
-    fim: "",
+    viagemInicio: "",
+    viagemFim: "",
+    previsaoInicio: "",
+    previsaoFim: "",
     cliente: "",
     caminhao: "",
     pagamento: "",
@@ -2446,8 +2448,10 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
     .filter((v) => {
       if (!filtrosAvancados) return true;
 
-      const okInicio = !filtros.inicio || v.previsaoPagamento >= filtros.inicio;
-      const okFim = !filtros.fim || v.previsaoPagamento <= filtros.fim;
+      const okViagemInicio = !filtros.viagemInicio || v.data >= filtros.viagemInicio;
+      const okViagemFim = !filtros.viagemFim || v.data <= filtros.viagemFim;
+      const okPrevisaoInicio = !filtros.previsaoInicio || v.previsaoPagamento >= filtros.previsaoInicio;
+      const okPrevisaoFim = !filtros.previsaoFim || v.previsaoPagamento <= filtros.previsaoFim;
       const okCliente = !filtros.cliente || v.cliente === filtros.cliente;
       const okCaminhao = !filtros.caminhao || v.caminhao === filtros.caminhao;
 
@@ -2455,7 +2459,7 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
       if (filtros.pagamento === "Pago") okPagamento = !!v.fretePago;
       if (filtros.pagamento === "Não pago") okPagamento = !v.fretePago;
 
-      return okInicio && okFim && okCliente && okCaminhao && okPagamento;
+      return okViagemInicio && okViagemFim && okPrevisaoInicio && okPrevisaoFim && okCliente && okCaminhao && okPagamento;
     })
     .filter((v) => {
       if (!textoPesquisa) return true;
@@ -2535,7 +2539,7 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
   );
 
   const limparFiltros = () => {
-    setFiltros({ inicio: "", fim: "", cliente: "", caminhao: "", pagamento: "" });
+    setFiltros({ viagemInicio: "", viagemFim: "", previsaoInicio: "", previsaoFim: "", cliente: "", caminhao: "", pagamento: "" });
     setPesquisa("");
     setPagina(1);
   };
@@ -2558,8 +2562,10 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
     `).join("");
 
     const filtrosTexto = [
-      filtros.inicio ? `Previsão inicial: ${formatarData(filtros.inicio)}` : null,
-      filtros.fim ? `Previsão final: ${formatarData(filtros.fim)}` : null,
+      filtros.viagemInicio ? `Viagem inicial: ${formatarData(filtros.viagemInicio)}` : null,
+      filtros.viagemFim ? `Viagem final: ${formatarData(filtros.viagemFim)}` : null,
+      filtros.previsaoInicio ? `Previsão inicial: ${formatarData(filtros.previsaoInicio)}` : null,
+      filtros.previsaoFim ? `Previsão final: ${formatarData(filtros.previsaoFim)}` : null,
       filtros.cliente ? `Cliente: ${filtros.cliente}` : null,
       filtros.caminhao ? `Caminhão: ${filtros.caminhao}` : null,
       filtros.pagamento ? `Pagamento: ${filtros.pagamento}` : null,
@@ -2678,15 +2684,23 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
       {filtrosAvancados && (
         <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 mb-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
-            <h3 className="font-black">Filtros de viagens e pagamentos</h3>
+            <div>
+              <h3 className="font-black">Filtros de viagens e pagamentos</h3>
+              <p className="text-zinc-500 text-xs mt-1">Use “Viagem inicial/final” para filtrar pela data da viagem. Use “Previsão inicial/final” para filtrar pela previsão de pagamento.</p>
+            </div>
             <button onClick={emitirPdfViagensFiltradas} className="bg-red-600 hover:bg-red-700 rounded-xl px-4 py-2 font-bold">
               Emitir PDF dos filtros
             </button>
           </div>
 
-          <div className="grid md:grid-cols-5 gap-3">
-            <Input label="Previsão inicial" type="date" value={filtros.inicio} onChange={(v) => { setFiltros({ ...filtros, inicio: v }); setPagina(1); }} />
-            <Input label="Previsão final" type="date" value={filtros.fim} onChange={(v) => { setFiltros({ ...filtros, fim: v }); setPagina(1); }} />
+          <div className="grid md:grid-cols-4 gap-3 mb-4">
+            <Input label="Viagem inicial" type="date" value={filtros.viagemInicio} onChange={(v) => { setFiltros({ ...filtros, viagemInicio: v }); setPagina(1); }} />
+            <Input label="Viagem final" type="date" value={filtros.viagemFim} onChange={(v) => { setFiltros({ ...filtros, viagemFim: v }); setPagina(1); }} />
+            <Input label="Previsão inicial" type="date" value={filtros.previsaoInicio} onChange={(v) => { setFiltros({ ...filtros, previsaoInicio: v }); setPagina(1); }} />
+            <Input label="Previsão final" type="date" value={filtros.previsaoFim} onChange={(v) => { setFiltros({ ...filtros, previsaoFim: v }); setPagina(1); }} />
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-3">
             <Select label="Cliente" value={filtros.cliente} onChange={(v) => { setFiltros({ ...filtros, cliente: v }); setPagina(1); }} options={clientesDisponiveis} />
             <Select label="Caminhão" value={filtros.caminhao} onChange={(v) => { setFiltros({ ...filtros, caminhao: v }); setPagina(1); }} options={caminhoesDisponiveis} />
             <Select label="Pagamento" value={filtros.pagamento} onChange={(v) => { setFiltros({ ...filtros, pagamento: v }); setPagina(1); }} options={["Pago", "Não pago"]} />
