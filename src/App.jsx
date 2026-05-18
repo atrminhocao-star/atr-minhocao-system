@@ -1300,7 +1300,6 @@ export default function App() {
     { id: "materiais", nome: "Materiais" },
     { id: "caminhoes", nome: "Caminhões" },
     { id: "viagens", nome: "Viagens" },
-    { id: "recebimentos", nome: "Fretes a receber" },
     { id: "relatorios", nome: "Relatórios" },
     { id: "fluxo", nome: "Fluxo de caixa" },
     { id: "receberfixo", nome: "Contas fixas a receber" },
@@ -1614,7 +1613,14 @@ export default function App() {
               </div>
             </section>
 
-            <ListaViagens viagens={viagens} apagarViagem={apagarViagemComConfirmacao} editarViagem={editarViagem} />
+            <ListaViagens
+              viagens={viagens}
+              apagarViagem={apagarViagemComConfirmacao}
+              editarViagem={editarViagem}
+              marcarFretePago={marcarFretePago}
+              desfazerPagamentoFrete={desfazerPagamentoFrete}
+              filtrosAvancados
+            />
           </div>
         )}
 
@@ -2400,13 +2406,21 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
   );
 }
 
-function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, desfazerPagamentoFrete }) {
+
+function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, desfazerPagamentoFrete, filtrosAvancados = false }) {
   const [ordenacao, setOrdenacao] = React.useState({
     campo: "data",
     direcao: "desc",
   });
   const [pagina, setPagina] = React.useState(1);
   const [pesquisa, setPesquisa] = React.useState("");
+  const [filtros, setFiltros] = React.useState({
+    inicio: "",
+    fim: "",
+    cliente: "",
+    prazo: "",
+    pagamento: "",
+  });
   const porPagina = 10;
 
   const alternarOrdenacao = (campo) => {
@@ -2423,36 +2437,56 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
     Finalizada: 3,
   };
 
+  const clientesDisponiveis = Array.from(new Set(viagens.map((v) => v.cliente).filter(Boolean))).sort();
+
   const textoPesquisa = pesquisa.trim().toLowerCase();
 
-  const viagensFiltradasPorPesquisa = [...viagens].filter((v) => {
-    if (!textoPesquisa) return true;
+  const viagensFiltradasPorPesquisa = [...viagens]
+    .filter((v) => {
+      if (!filtrosAvancados) return true;
 
-    const conteudo = [
-      v.data,
-      formatarData(v.data),
-      v.createdAt,
-      formatarData(String(v.createdAt || "").slice(0, 10)),
-      v.numeroPedido,
-      v.cliente,
-      v.caminhao,
-      v.material,
-      v.origem,
-      v.destino,
-      v.quantidade,
-      v.unidade,
-      v.frete,
-      moeda(v.frete),
-      v.previsaoPagamento,
-      formatarData(v.previsaoPagamento),
-      v.status,
-      statusPrazoFrete(v),
-    ]
-      .join(" ")
-      .toLowerCase();
+      const okInicio = !filtros.inicio || v.previsaoPagamento >= filtros.inicio;
+      const okFim = !filtros.fim || v.previsaoPagamento <= filtros.fim;
+      const okCliente = !filtros.cliente || v.cliente === filtros.cliente;
+      const okPrazo = !filtros.prazo || statusPrazoFrete(v) === filtros.prazo;
 
-    return conteudo.includes(textoPesquisa);
-  });
+      let okPagamento = true;
+      if (filtros.pagamento === "Pago") okPagamento = !!v.fretePago;
+      if (filtros.pagamento === "Não pago") okPagamento = !v.fretePago;
+
+      return okInicio && okFim && okCliente && okPrazo && okPagamento;
+    })
+    .filter((v) => {
+      if (!textoPesquisa) return true;
+
+      const conteudo = [
+        v.data,
+        formatarData(v.data),
+        v.createdAt,
+        formatarData(String(v.createdAt || "").slice(0, 10)),
+        v.numeroPedido,
+        v.cliente,
+        v.caminhao,
+        v.material,
+        v.origem,
+        v.destino,
+        v.quantidade,
+        v.unidade,
+        v.frete,
+        moeda(v.frete),
+        v.previsaoPagamento,
+        formatarData(v.previsaoPagamento),
+        v.dataPagamentoFrete,
+        formatarData(v.dataPagamentoFrete),
+        v.status,
+        v.fretePago ? "Pago" : "Não pago",
+        statusPrazoFrete(v),
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return conteudo.includes(textoPesquisa);
+    });
 
   const viagensOrdenadas = viagensFiltradasPorPesquisa.sort((a, b) => {
     let valorA = a[ordenacao.campo] || "";
@@ -2474,8 +2508,19 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
   });
 
   const totalPaginas = Math.max(1, Math.ceil(viagensOrdenadas.length / porPagina));
-  const inicio = (pagina - 1) * porPagina;
-  const viagensPagina = viagensOrdenadas.slice(inicio, inicio + porPagina);
+  const inicioPagina = (pagina - 1) * porPagina;
+  const viagensPagina = viagensOrdenadas.slice(inicioPagina, inicioPagina + porPagina);
+
+  const totalFiltrado = viagensOrdenadas.reduce((s, v) => s + numero(v.frete), 0);
+  const totalAReceber = viagensOrdenadas
+    .filter((v) => !v.fretePago)
+    .reduce((s, v) => s + numero(v.frete), 0);
+  const totalRecebido = viagensOrdenadas
+    .filter((v) => v.fretePago)
+    .reduce((s, v) => s + numero(v.frete), 0);
+  const totalEmAtraso = viagensOrdenadas
+    .filter(freteEmAtraso)
+    .reduce((s, v) => s + numero(v.frete), 0);
 
   const seta = (campo) => {
     if (ordenacao.campo !== campo) return "↕";
@@ -2487,6 +2532,12 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
       {children} {seta(campo)}
     </button>
   );
+
+  const limparFiltros = () => {
+    setFiltros({ inicio: "", fim: "", cliente: "", prazo: "", pagamento: "" });
+    setPesquisa("");
+    setPagina(1);
+  };
 
   return (
     <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
@@ -2507,6 +2558,27 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
         </div>
       </div>
 
+      {filtrosAvancados && (
+        <div className="grid md:grid-cols-4 gap-3 mb-4">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3">
+            <p className="text-xs text-zinc-500">Total filtrado</p>
+            <p className="font-black text-white">{moeda(totalFiltrado)}</p>
+          </div>
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3">
+            <p className="text-xs text-zinc-500">A receber</p>
+            <p className="font-black text-red-400">{moeda(totalAReceber)}</p>
+          </div>
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3">
+            <p className="text-xs text-zinc-500">Recebido</p>
+            <p className="font-black text-green-400">{moeda(totalRecebido)}</p>
+          </div>
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3">
+            <p className="text-xs text-zinc-500">Em atraso</p>
+            <p className="font-black text-red-300">{moeda(totalEmAtraso)}</p>
+          </div>
+        </div>
+      )}
+
       <div className="mb-4">
         <Input
           label="Pesquisar nas viagens/fretes"
@@ -2521,71 +2593,98 @@ function ListaViagens({ viagens, apagarViagem, editarViagem, marcarFretePago, de
         </p>
       </div>
 
+      {filtrosAvancados && (
+        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 mb-4">
+          <h3 className="font-black mb-3">Filtros de pagamento e prazo</h3>
+          <div className="grid md:grid-cols-5 gap-3">
+            <Input label="Previsão inicial" type="date" value={filtros.inicio} onChange={(v) => { setFiltros({ ...filtros, inicio: v }); setPagina(1); }} />
+            <Input label="Previsão final" type="date" value={filtros.fim} onChange={(v) => { setFiltros({ ...filtros, fim: v }); setPagina(1); }} />
+            <Select label="Cliente" value={filtros.cliente} onChange={(v) => { setFiltros({ ...filtros, cliente: v }); setPagina(1); }} options={clientesDisponiveis} />
+            <Select label="Prazo" value={filtros.prazo} onChange={(v) => { setFiltros({ ...filtros, prazo: v }); setPagina(1); }} options={["Em atraso", "Dentro do prazo"]} />
+            <Select label="Pagamento" value={filtros.pagamento} onChange={(v) => { setFiltros({ ...filtros, pagamento: v }); setPagina(1); }} options={["Pago", "Não pago"]} />
+          </div>
+          <button onClick={limparFiltros} className="mt-3 bg-zinc-800 hover:bg-zinc-700 rounded-xl px-4 py-2 font-bold">
+            Limpar filtros
+          </button>
+        </div>
+      )}
+
       <div className="grid gap-3">
-        {viagensPagina.map((v) => (
-          <div key={v.id} className={(freteEmAtraso(v) ? "bg-red-950/40 border-red-700" : "bg-zinc-950 border-zinc-800") + " border rounded-2xl p-4"}>
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex flex-wrap gap-2 mb-2">
-                  <span className="bg-red-600 rounded-full px-3 py-1 text-xs font-bold">{formatarData(v.data)}</span>
-                  <span className="bg-zinc-800 rounded-full px-3 py-1 text-xs">Pedido: {v.numeroPedido || "Não informado"}</span>
-                  <span className="bg-zinc-800 rounded-full px-3 py-1 text-xs">{v.status || "-"}</span>
-                  {v.fretePago && (
-                    <span className="bg-green-800 rounded-full px-3 py-1 text-xs">Pago: {formatarData(v.dataPagamentoFrete)}</span>
-                  )}
-                  {!v.fretePago && v.previsaoPagamento && (
-                    <span className={(freteEmAtraso(v) ? "bg-red-600" : "bg-green-800") + " rounded-full px-3 py-1 text-xs font-bold"}>
-                      {freteEmAtraso(v) ? "EM ATRASO" : "Dentro do prazo"}
-                    </span>
-                  )}
+        {viagensPagina.map((v) => {
+          const estaAtrasado = freteEmAtraso(v);
+
+          return (
+            <div key={v.id} className={(estaAtrasado ? "bg-red-950/40 border-red-700" : "bg-zinc-950 border-zinc-800") + " border rounded-2xl p-4"}>
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    <span className="bg-red-600 rounded-full px-3 py-1 text-xs font-bold">{formatarData(v.data)}</span>
+                    <span className="bg-zinc-800 rounded-full px-3 py-1 text-xs">Pedido: {v.numeroPedido || "Não informado"}</span>
+                    <span className="bg-zinc-800 rounded-full px-3 py-1 text-xs">{v.status || "-"}</span>
+
+                    {v.fretePago ? (
+                      <span className="bg-green-800 rounded-full px-3 py-1 text-xs font-bold">Pago: {formatarData(v.dataPagamentoFrete)}</span>
+                    ) : (
+                      <span className="bg-red-800 rounded-full px-3 py-1 text-xs font-bold">Não pago</span>
+                    )}
+
+                    {!v.fretePago && v.previsaoPagamento && (
+                      <span className={(estaAtrasado ? "bg-red-600" : "bg-green-800") + " rounded-full px-3 py-1 text-xs font-bold"}>
+                        {estaAtrasado ? "EM ATRASO" : "Dentro do prazo"}
+                      </span>
+                    )}
+                  </div>
+
+                  <h3 className="font-black text-lg">{v.cliente || "-"}</h3>
+                  <p className="text-zinc-400 text-sm">
+                    {v.caminhao || "-"} • {v.material || "-"} • {v.quantidade ? `${v.quantidade} ${v.unidade || ""}` : "Quantidade não informada"}
+                  </p>
+                  <p className="text-zinc-300 text-sm mt-1">
+                    {v.origem || "-"} → {v.destino || "-"}
+                  </p>
+                  <p className={(estaAtrasado ? "text-red-300 font-bold" : "text-zinc-500") + " text-xs mt-1"}>
+                    Previsão pagamento: {formatarData(v.previsaoPagamento)}
+                  </p>
                 </div>
 
-                <h3 className="font-black text-lg">{v.cliente || "-"}</h3>
-                <p className="text-zinc-400 text-sm">
-                  {v.caminhao || "-"} • {v.material || "-"} • {v.quantidade ? `${v.quantidade} ${v.unidade || ""}` : "Quantidade não informada"}
-                </p>
-                <p className="text-zinc-300 text-sm mt-1">
-                  {v.origem || "-"} → {v.destino || "-"}
-                </p>
-                <p className="text-zinc-500 text-xs mt-1">
-                  Previsão pagamento: {formatarData(v.previsaoPagamento)}
-                </p>
-              </div>
-
-              <div className="lg:text-right">
-                <p className="text-zinc-400 text-xs">Frete</p>
-                <p className="text-red-400 font-black text-xl">{moeda(v.frete)}</p>
-                <div className="flex flex-wrap lg:justify-end gap-2 mt-3">
-                  {marcarFretePago && !v.fretePago && (
-                    <button onClick={() => marcarFretePago(v)} className="bg-green-700 hover:bg-green-800 rounded-xl px-3 py-2 text-xs font-bold">
-                      Marcar pago
-                    </button>
-                  )}
-                  {marcarFretePago && v.fretePago && (
-                    <>
-                      <button onClick={() => marcarFretePago(v)} className="bg-green-900 hover:bg-green-800 rounded-xl px-3 py-2 text-xs font-bold text-green-200">
-                        Alterar data pagamento
+                <div className="lg:text-right">
+                  <p className="text-zinc-400 text-xs">Frete</p>
+                  <p className={(estaAtrasado ? "text-red-300" : "text-red-400") + " font-black text-xl"}>{moeda(v.frete)}</p>
+                  <div className="flex flex-wrap lg:justify-end gap-2 mt-3">
+                    {marcarFretePago && !v.fretePago && (
+                      <button onClick={() => marcarFretePago(v)} className="bg-green-700 hover:bg-green-800 rounded-xl px-3 py-2 text-xs font-bold">
+                        Marcar pago
                       </button>
-                      {desfazerPagamentoFrete && (
-                        <button onClick={() => desfazerPagamentoFrete(v)} className="bg-yellow-700 hover:bg-yellow-800 rounded-xl px-3 py-2 text-xs font-bold">
-                          Desfazer pagamento
+                    )}
+
+                    {marcarFretePago && v.fretePago && (
+                      <>
+                        <button onClick={() => marcarFretePago(v)} className="bg-green-900 hover:bg-green-800 rounded-xl px-3 py-2 text-xs font-bold text-green-200">
+                          Alterar data pagamento
                         </button>
-                      )}
-                    </>
-                  )}
-                  {editarViagem && (
-                    <button onClick={() => editarViagem(v)} className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 text-xs font-bold">
-                      Editar
+                        {desfazerPagamentoFrete && (
+                          <button onClick={() => desfazerPagamentoFrete(v)} className="bg-yellow-700 hover:bg-yellow-800 rounded-xl px-3 py-2 text-xs font-bold">
+                            Desfazer pagamento
+                          </button>
+                        )}
+                      </>
+                    )}
+
+                    {editarViagem && (
+                      <button onClick={() => editarViagem(v)} className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 text-xs font-bold">
+                        Editar
+                      </button>
+                    )}
+
+                    <button onClick={() => apagarViagem(v.id)} className="bg-red-600 hover:bg-red-700 rounded-xl px-3 py-2 text-xs font-bold">
+                      Apagar
                     </button>
-                  )}
-                  <button onClick={() => apagarViagem(v.id)} className="bg-red-600 hover:bg-red-700 rounded-xl px-3 py-2 text-xs font-bold">
-                    Apagar
-                  </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {viagensPagina.length === 0 && (
           <p className="text-zinc-400 py-6">Nenhuma viagem encontrada para a pesquisa/filtro atual.</p>
