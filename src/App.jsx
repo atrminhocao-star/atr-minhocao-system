@@ -1309,6 +1309,10 @@ export default function App() {
         setDespesas(despesas.map((d) => d.id === despesaEditandoId ? { ...d, ...despesaSalva } : d));
       }
 
+      if (despesaSalva.statusPagamento !== "Pago") {
+        setSaidasManuais(saidasManuais.filter((s) => s.origemDespesaId !== despesaEditandoId));
+      }
+
       setDespesaEditandoId(null);
       setAplicarRecorrencia(false);
     } else {
@@ -1394,7 +1398,7 @@ export default function App() {
     { id: "viagens", nome: "Viagens" },
     { id: "fluxo", nome: "Fluxo de caixa" },
     { id: "receberfixo", nome: "Contas fixas a receber" },
-    { id: "contas", nome: "Despesas da empresa" },
+    { id: "contas", nome: "Contas a pagar" },
     { id: "usuarios", nome: "Usuários" },
   ];
 
@@ -1889,7 +1893,7 @@ export default function App() {
               <Card titulo="Em aberto" valor={`${resumoContas.abertas} | ${moeda(resumoContas.valorAberto)}`} icone={CalendarDays} />
               <Card titulo="Atrasadas" valor={`${resumoContas.atrasadas} | ${moeda(resumoContas.valorAtrasado)}`} icone={Wallet} destaque />
               <Card titulo="Pagas" valor={`${resumoContas.pagas} | ${moeda(resumoContas.valorPago)}`} icone={Save} />
-              <Card titulo="Total de despesas" valor={contasAPagar.length} icone={Fuel} />
+              <Card titulo="Total de contas" valor={contasAPagar.length} icone={Fuel} />
             </div>
 
             {despesaEditandoId && (
@@ -1957,7 +1961,7 @@ export default function App() {
               </button>
             </section>
 
-            <ListaContas despesas={contasAPagar} editarDespesa={editarDespesa} setDespesas={setDespesas} todasDespesas={despesas} />
+            <ListaContas despesas={contasAPagar.filter((d) => statusConta(d) !== "Pago")} editarDespesa={editarDespesa} setDespesas={setDespesas} todasDespesas={despesas} setSaidasManuais={setSaidasManuais} />
           </div>
         )}
 
@@ -2991,7 +2995,7 @@ function ListaDespesas({ despesas, apagarDespesa, editarDespesa }) {
 
 
 
-function ListaContas({ despesas, editarDespesa, setDespesas, todasDespesas }) {
+function ListaContas({ despesas, editarDespesa, setDespesas, todasDespesas, setSaidasManuais }) {
   const [pagina, setPagina] = React.useState(1);
   const [pesquisa, setPesquisa] = React.useState("");
   const [filtroStatus, setFiltroStatus] = React.useState("Todos");
@@ -3002,11 +3006,51 @@ function ListaContas({ despesas, editarDespesa, setDespesas, todasDespesas }) {
     const dataPagamento = prompt("Informe a data de pagamento no formato AAAA-MM-DD:", hojeISO());
     if (!dataPagamento) return;
 
+    const despesaPaga = {
+      ...despesa,
+      statusPagamento: "Pago",
+      dataPagamento,
+      formaPagamento: normalizarFormaPagamento(despesa.formaPagamento),
+    };
+
     setDespesas(todasDespesas.map((d) =>
-      d.id === despesa.id
-        ? { ...d, statusPagamento: "Pago", dataPagamento, formaPagamento: normalizarFormaPagamento(d.formaPagamento) }
-        : d
+      d.id === despesa.id ? despesaPaga : d
     ));
+
+    if (typeof setSaidasManuais === "function") {
+      setSaidasManuais((saidasAtuais) => {
+        const jaExiste = saidasAtuais.some((s) => s.origemDespesaId === despesa.id);
+        if (jaExiste) {
+          return saidasAtuais.map((s) =>
+            s.origemDespesaId === despesa.id
+              ? {
+                  ...s,
+                  data: dataPagamento,
+                  valor: numero(despesa.valor),
+                  descricao: `Pagamento de conta: ${despesa.descricao || despesa.tipo || "Despesa"}`,
+                  cliente: despesa.responsavelPagamento || despesa.postoEmpresa || "",
+                  caminhao: despesa.caminhao || "",
+                  origem: "Conta a pagar",
+                }
+              : s
+          );
+        }
+
+        return [
+          ...saidasAtuais,
+          {
+            id: crypto.randomUUID(),
+            origemDespesaId: despesa.id,
+            data: dataPagamento,
+            valor: numero(despesa.valor),
+            descricao: `Pagamento de conta: ${despesa.descricao || despesa.tipo || "Despesa"}`,
+            cliente: despesa.responsavelPagamento || despesa.postoEmpresa || "",
+            caminhao: despesa.caminhao || "",
+            origem: "Conta a pagar",
+          },
+        ];
+      });
+    }
   };
 
   const textoPesquisa = pesquisa.trim().toLowerCase();
@@ -3065,8 +3109,8 @@ function ListaContas({ despesas, editarDespesa, setDespesas, todasDespesas }) {
     <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
         <div>
-          <h2 className="text-2xl font-black">Despesas da empresa por data</h2>
-          <p className="text-zinc-400 text-sm">Máximo de 10 despesas por página. Total filtrado: {despesasFiltradas.length}.</p>
+          <h2 className="text-2xl font-black">Contas a pagar por data</h2>
+          <p className="text-zinc-400 text-sm">Máximo de 10 contas por página. Total filtrado: {despesasFiltradas.length}.</p>
         </div>
         <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 min-w-[180px]">
           <p className="text-xs text-zinc-500">Total filtrado</p>
@@ -3164,7 +3208,7 @@ function ListaContas({ despesas, editarDespesa, setDespesas, todasDespesas }) {
         })}
 
         {despesasPagina.length === 0 && (
-          <p className="text-zinc-400 py-6">Nenhuma despesa encontrada.</p>
+          <p className="text-zinc-400 py-6">Nenhuma conta encontrada.</p>
         )}
       </div>
 
