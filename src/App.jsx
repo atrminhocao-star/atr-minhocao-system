@@ -1402,7 +1402,6 @@ export default function App() {
     { id: "caminhoes", nome: "Caminhões" },
     { id: "viagens", nome: "Viagens" },
     { id: "fluxo", nome: "Fluxo de caixa" },
-    { id: "receberfixo", nome: "Contas fixas a receber" },
     { id: "contas", nome: "Contas a pagar" },
     { id: "usuarios", nome: "Usuários" },
   ];
@@ -1856,7 +1855,14 @@ export default function App() {
               apagarSaida={(id) => setSaidasManuais(saidasManuais.filter(s => s.id !== id))}
               editarEntrada={editarEntradaCaixa}
               editarSaida={editarSaidaCaixa}
-              editarDespesa={editarDespesa}
+              editarDespesa={(item) => {
+                const despesaOriginal = despesas.find((d) => d.id === (item.origemDespesaId || item.id));
+                if (despesaOriginal) {
+                  editarDespesa(despesaOriginal);
+                } else {
+                  alert("Não encontrei a despesa original para editar.");
+                }
+              }}
               viagens={viagens}
               marcarFretePago={marcarFretePago}
               desfazerPagamentoFrete={desfazerPagamentoFrete}
@@ -1864,34 +1870,6 @@ export default function App() {
           </div>
         )}
 
-
-        {aba === "receberfixo" && (
-          <div className="space-y-5">
-            <div className="grid md:grid-cols-4 gap-4">
-              <Card titulo="Parcelas em aberto" valor={resumoContasReceber.abertas} icone={CalendarDays} />
-              <Card titulo="Valor em aberto" valor={moeda(resumoContasReceber.valorAberto)} icone={Wallet} destaque />
-              <Card titulo="Parcelas pagas" valor={resumoContasReceber.pagas} icone={Save} />
-              <Card titulo="Valor recebido" valor={moeda(resumoContasReceber.valorPago)} icone={Wallet} />
-            </div>
-
-            <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-              <h2 className="text-2xl font-black mb-4">Nova conta fixa a receber</h2>
-              <p className="text-zinc-400 mb-4">Exemplo: receber R$ 1.000,00 durante 10 meses. O sistema cria as parcelas automaticamente.</p>
-              <div className="grid md:grid-cols-4 gap-3">
-                <Select label="Cliente/empresa" value={contaReceberForm.cliente} onChange={(v) => setContaReceberForm({ ...contaReceberForm, cliente: v })} options={clientes.map(c => c.nome)} />
-                <Input label="Descrição" value={contaReceberForm.descricao} onChange={(v) => setContaReceberForm({ ...contaReceberForm, descricao: v })} />
-                <Input label="Valor de cada parcela R$" value={contaReceberForm.valorParcela} onChange={(v) => setContaReceberForm({ ...contaReceberForm, valorParcela: formatarValorDigitado(v) })} />
-                <Input label="Quantidade de parcelas/meses" value={contaReceberForm.quantidadeParcelas} onChange={(v) => setContaReceberForm({ ...contaReceberForm, quantidadeParcelas: v.replace(/\\D/g, "") })} />
-                <Input label="Data da primeira parcela" type="date" value={contaReceberForm.dataPrimeiraParcela} onChange={(v) => setContaReceberForm({ ...contaReceberForm, dataPrimeiraParcela: v })} />
-              </div>
-              <button onClick={salvarContaReceberFixa} className="mt-4 bg-red-600 hover:bg-red-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2">
-                <Save size={18} /> Criar parcelas
-              </button>
-            </section>
-
-            <ListaContasReceberFixas contas={contasReceberFixas} marcarPago={marcarContaReceberPaga} apagarConta={(id) => setContasReceberFixas(contasReceberFixas.filter(c => c.id !== id))} />
-          </div>
-        )}
 
         {aba === "contas" && (
           <div className="space-y-5">
