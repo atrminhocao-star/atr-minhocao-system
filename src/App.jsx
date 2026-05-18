@@ -1267,14 +1267,11 @@ export default function App() {
   };
 
   const salvarDespesa = () => {
-    if (!despesaForm.data || !despesaForm.caminhao || !despesaForm.tipo) return alert("Informe data, caminhão e tipo da despesa.");
+    if (!despesaForm.data || !despesaForm.tipo) return alert("Informe data e tipo da despesa.");
 
     let valorFinal = numero(despesaForm.valor);
 
-    if (despesaForm.tipo === "Combustível") {
-      if (!despesaForm.litros || !despesaForm.valorLitro || !despesaForm.kmPainel) {
-        return alert("Para combustível, informe litros, valor por litro e KM do painel.");
-      }
+    if (despesaForm.tipo === "Combustível" && despesaForm.litros && despesaForm.valorLitro) {
       valorFinal = numero(despesaForm.litros) * numero(despesaForm.valorLitro);
     }
 
@@ -1341,7 +1338,7 @@ export default function App() {
       valor: despesa.valor || "",
       statusPagamento: despesa.statusPagamento || "Pago",
     });
-    setAba("despesas");
+    setAba("contas");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -1894,6 +1891,50 @@ export default function App() {
               <Card titulo="Pagas" valor={`${resumoContas.pagas} | ${moeda(resumoContas.valorPago)}`} icone={Save} />
               <Card titulo="Total de despesas" valor={contasAPagar.length} icone={Fuel} />
             </div>
+
+            {despesaEditandoId && (
+              <section className="bg-zinc-900 border border-red-800 rounded-3xl p-5">
+                <h2 className="text-2xl font-black mb-1">Editar despesa</h2>
+                <p className="text-zinc-400 mb-4">Altere os dados da despesa selecionada. Em contas recorrentes, você pode aplicar as alterações principais em todas as parcelas.</p>
+
+                <div className="grid md:grid-cols-4 gap-3">
+                  <Input label="Data lançamento" type="date" value={despesaForm.data} onChange={(v) => setDespesaForm({ ...despesaForm, data: v })} />
+                  <Select label="Caminhão" value={despesaForm.caminhao} onChange={(v) => setDespesaForm({ ...despesaForm, caminhao: v })} options={caminhoes.map(c => c.placa)} />
+                  <Select label="Tipo" value={despesaForm.tipo} onChange={(v) => setDespesaForm({ ...despesaForm, tipo: v })} options={["Combustível", "Manutenção", "Pneu", "Pedágio", "Óleo", "Peças", "Salário", "Aluguel", "Contador", "Financiamento", "Imposto", "Seguro", "Outros"]} />
+                  <Select label="Empresa/cliente a pagar" value={despesaForm.responsavelPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, responsavelPagamento: v })} options={clientes.map(c => c.nome)} />
+
+                  <Input label="Descrição" value={despesaForm.descricao} onChange={(v) => setDespesaForm({ ...despesaForm, descricao: v })} />
+                  <Input label="Valor R$" value={String(despesaForm.valor ?? "")} onChange={(v) => setDespesaForm({ ...despesaForm, valor: formatarValorDigitado(v) })} />
+                  <Select label="Status do pagamento" value={despesaForm.statusPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, statusPagamento: v })} options={["Pago", "A prazo", "Pendente"]} />
+                  <Select label="Forma de pagamento" value={despesaForm.formaPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, formaPagamento: v })} options={["Dinheiro", "Pix", "Cartão", "Boleto", "A prazo", "Desconto em folha", "Outro"]} />
+
+                  <Input label="Data de vencimento/previsão" type="date" value={despesaForm.dataVencimento} onChange={(v) => setDespesaForm({ ...despesaForm, dataVencimento: v })} />
+                  <Input label="Data de pagamento" type="date" value={despesaForm.dataPagamento} onChange={(v) => setDespesaForm({ ...despesaForm, dataPagamento: v })} />
+                  <Input label="Posto/empresa" value={despesaForm.postoEmpresa} onChange={(v) => setDespesaForm({ ...despesaForm, postoEmpresa: v })} />
+                  <Input label="KM no painel" value={despesaForm.kmPainel} onChange={(v) => setDespesaForm({ ...despesaForm, kmPainel: v })} />
+                </div>
+
+                {despesas.find((d) => d.id === despesaEditandoId)?.recorrenciaGrupoId && (
+                  <label className="mt-4 flex items-center gap-2 text-sm text-zinc-300">
+                    <input
+                      type="checkbox"
+                      checked={aplicarRecorrencia}
+                      onChange={(e) => setAplicarRecorrencia(e.target.checked)}
+                    />
+                    Aplicar alterações principais em todas as parcelas desta recorrência
+                  </label>
+                )}
+
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <button onClick={salvarDespesa} className="bg-red-600 hover:bg-red-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2">
+                    <Save size={18} /> Salvar alterações
+                  </button>
+                  <button onClick={cancelarEdicaoDespesa} className="bg-zinc-800 hover:bg-zinc-700 rounded-2xl px-6 py-3 font-bold inline-flex items-center gap-2">
+                    <X size={18} /> Cancelar edição
+                  </button>
+                </div>
+              </section>
+            )}
 
             <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
               <h2 className="text-2xl font-black mb-1">Nova conta recorrente a pagar</h2>
