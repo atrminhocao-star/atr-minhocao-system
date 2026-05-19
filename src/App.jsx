@@ -1880,6 +1880,17 @@ export default function App() {
                   alert("Não encontrei a despesa original para editar.");
                 }
               }}
+              apagarDespesaFluxo={(item) => {
+                const idDespesa = item.origemDespesaId || item.id;
+                const despesaOriginal = despesas.find((d) => d.id === idDespesa);
+                if (!despesaOriginal) {
+                  alert("Não encontrei a despesa original para apagar.");
+                  return;
+                }
+                if (!window.confirm("Tem certeza que deseja apagar esta despesa do fluxo e das contas a pagar?")) return;
+                setDespesas(despesas.filter((d) => d.id !== idDespesa));
+                setSaidasManuais(saidasManuais.filter((s) => s.origemDespesaId !== idDespesa));
+              }}
               viagens={viagens}
               marcarFretePago={marcarFretePago}
               desfazerPagamentoFrete={desfazerPagamentoFrete}
@@ -2112,7 +2123,7 @@ function ListaContasReceberFixas({ contas, marcarPago, apagarConta }) {
 
 
 
-function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, editarSaida, editarDespesa, viagens, marcarFretePago, desfazerPagamentoFrete }) {
+function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, editarSaida, editarDespesa, apagarDespesaFluxo, viagens, marcarFretePago, desfazerPagamentoFrete }) {
   const [pagina, setPagina] = React.useState(1);
   const [tipoFiltro, setTipoFiltro] = React.useState("Todos");
   const [ordenarPor, setOrdenarPor] = React.useState("data-desc");
@@ -2471,6 +2482,12 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
                       className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 text-xs font-bold"
                     >
                       Editar despesa
+                    </button>
+                    <button
+                      onClick={() => apagarDespesaFluxo && apagarDespesaFluxo(item)}
+                      className="bg-red-600 hover:bg-red-700 rounded-xl px-3 py-2 text-xs font-bold"
+                    >
+                      Apagar despesa
                     </button>
                   </>
                 ) : item.origem === "Manual" ? (
