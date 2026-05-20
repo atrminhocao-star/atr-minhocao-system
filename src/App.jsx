@@ -102,6 +102,8 @@ const juntarPorId = (listas = []) => {
 const carregarTodosDadosSalvos = () => {
   const chaves = [
     "atr-minhocao-dados",
+    "atr-minhocao-v15",
+    "atr-minhocao-v14",
     "atr-minhocao-v13",
     "atr-minhocao-v12",
     "atr-minhocao-v11",
@@ -114,6 +116,11 @@ const carregarTodosDadosSalvos = () => {
     "atr-minhocao-v4",
     "atr-minhocao-v3",
     "atr-minhocao-v2",
+    "ATR-Minhocao-dados",
+    "ATR-Minhocao-V15",
+    "ATR-Minhocao-V14",
+    "ATR-Minhocao-V13",
+    "ATR-Minhocao-V12",
   ];
 
   const dados = [];
@@ -168,6 +175,1839 @@ const dadosIniciais = {
   ],
   viagens: [],
   despesas: [],
+};
+
+const DADOS_RECUPERADOS_FOLHAS = {
+  "usuarios": [
+    {
+      "id": "1",
+      "nome": "Administrador",
+      "usuario": "admin",
+      "senha": "1234",
+      "perfil": "Administrador"
+    }
+  ],
+  "clientes": [
+    {
+      "id": "cli-001",
+      "nome": "SEMPRE COM DEUS TRANSPORTES",
+      "contato": "",
+      "telefone": "",
+      "cidade": ""
+    },
+    {
+      "id": "cli-002",
+      "nome": "PORTUGAL LOG",
+      "contato": "",
+      "telefone": "",
+      "cidade": ""
+    },
+    {
+      "id": "cli-003",
+      "nome": "TRANS CAMILE",
+      "contato": "",
+      "telefone": "",
+      "cidade": ""
+    },
+    {
+      "id": "cli-004",
+      "nome": "ATR MINHOCÃO",
+      "contato": "",
+      "telefone": "",
+      "cidade": ""
+    },
+    {
+      "id": "cli-005",
+      "nome": "CARLÃO - FRETES DA CINZAS ÚMIDAS",
+      "contato": "",
+      "telefone": "",
+      "cidade": ""
+    }
+  ],
+  "materiais": [
+    {
+      "id": "mat-001",
+      "nome": "Brita",
+      "origem": "",
+      "destino": "",
+      "valor": ""
+    }
+  ],
+  "caminhoes": [
+    {
+      "id": "cam-001",
+      "placa": "MII4D55",
+      "modelo": "Caminhão",
+      "motorista": "Jean Carlos"
+    },
+    {
+      "id": "cam-002",
+      "placa": "MIP1H40",
+      "modelo": "Caminhão",
+      "motorista": "Sandy"
+    },
+    {
+      "id": "cam-003",
+      "placa": "MSJ6G28",
+      "modelo": "Caminhão/Pajero",
+      "motorista": "Alberto"
+    },
+    {
+      "id": "cam-004",
+      "placa": "TODOS",
+      "modelo": "Geral",
+      "motorista": ""
+    }
+  ],
+  "viagens": [
+    {
+      "id": "viag-001",
+      "createdAt": "2026-05-06",
+      "data": "2026-05-06",
+      "numeroPedido": "643974",
+      "caminhao": "MII4D55",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 820.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-06"
+    },
+    {
+      "id": "viag-002",
+      "createdAt": "2026-05-06",
+      "data": "2026-05-06",
+      "numeroPedido": "643947",
+      "caminhao": "MII4D55",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 820.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-06"
+    },
+    {
+      "id": "viag-003",
+      "createdAt": "2026-05-06",
+      "data": "2026-05-06",
+      "numeroPedido": "644062",
+      "caminhao": "MII4D55",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 820.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-06"
+    },
+    {
+      "id": "viag-004",
+      "createdAt": "2026-05-06",
+      "data": "2026-05-06",
+      "numeroPedido": "644021",
+      "caminhao": "MII4D55",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 820.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-06"
+    },
+    {
+      "id": "viag-005",
+      "createdAt": "2026-05-08",
+      "data": "2026-05-08",
+      "numeroPedido": "644096",
+      "caminhao": "MII4D55",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 820.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-08"
+    },
+    {
+      "id": "viag-006",
+      "createdAt": "2026-05-08",
+      "data": "2026-05-08",
+      "numeroPedido": "644127",
+      "caminhao": "MII4D55",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 820.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-08"
+    },
+    {
+      "id": "viag-007",
+      "createdAt": "2026-05-08",
+      "data": "2026-05-08",
+      "numeroPedido": "Não informado",
+      "caminhao": "MII4D55",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 820.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-08"
+    },
+    {
+      "id": "viag-008",
+      "createdAt": "2026-05-08",
+      "data": "2026-05-08",
+      "numeroPedido": "Não informado",
+      "caminhao": "MII4D55",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 820.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-08"
+    },
+    {
+      "id": "viag-009",
+      "createdAt": "2026-05-13",
+      "data": "2026-05-13",
+      "numeroPedido": "644277",
+      "caminhao": "MII4D55",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 820.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-13"
+    },
+    {
+      "id": "viag-010",
+      "createdAt": "2026-05-13",
+      "data": "2026-05-13",
+      "numeroPedido": "644241",
+      "caminhao": "MII4D55",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 820.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-13"
+    },
+    {
+      "id": "viag-011",
+      "createdAt": "2026-05-13",
+      "data": "2026-05-13",
+      "numeroPedido": "644348",
+      "caminhao": "MII4D55",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 820.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-13"
+    },
+    {
+      "id": "viag-012",
+      "createdAt": "2026-05-13",
+      "data": "2026-05-13",
+      "numeroPedido": "644374",
+      "caminhao": "MII4D55",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 820.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-13"
+    },
+    {
+      "id": "viag-013",
+      "createdAt": "2026-05-13",
+      "data": "2026-05-13",
+      "numeroPedido": "644445",
+      "caminhao": "MII4D55",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 820.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-13"
+    },
+    {
+      "id": "viag-014",
+      "createdAt": "2026-05-15",
+      "data": "2026-05-15",
+      "numeroPedido": "644417",
+      "caminhao": "MII4D55",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 820.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-15"
+    },
+    {
+      "id": "viag-015",
+      "createdAt": "2026-05-15",
+      "data": "2026-05-15",
+      "numeroPedido": "644530",
+      "caminhao": "MII4D55",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 820.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-15"
+    },
+    {
+      "id": "viag-016",
+      "createdAt": "2026-05-15",
+      "data": "2026-05-15",
+      "numeroPedido": "644480",
+      "caminhao": "MII4D55",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 820.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-15"
+    },
+    {
+      "id": "viag-017",
+      "createdAt": "2026-05-15",
+      "data": "2026-05-15",
+      "numeroPedido": "644592",
+      "caminhao": "MII4D55",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 820.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-15"
+    },
+    {
+      "id": "viag-018",
+      "createdAt": "2026-05-15",
+      "data": "2026-05-15",
+      "numeroPedido": "644567",
+      "caminhao": "MII4D55",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 820.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-15"
+    },
+    {
+      "id": "viag-023",
+      "createdAt": "2026-05-07",
+      "data": "2026-05-07",
+      "numeroPedido": "Parcela 1/8 Caminhão Gustavo - item riscado na folha",
+      "caminhao": "TODOS",
+      "origem": "",
+      "destino": "",
+      "material": "",
+      "cliente": "PORTUGAL LOG",
+      "quantidade": "",
+      "unidade": "Toneladas",
+      "valorUnitario": "",
+      "frete": 6000.0,
+      "previsaoPagamento": "",
+      "status": "Finalizada",
+      "fretePago": true,
+      "dataPagamentoFrete": "2026-05-07"
+    }
+  ],
+  "despesas": [
+    {
+      "id": "desp-001",
+      "data": "2026-05-04",
+      "caminhao": "MII4D55",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-04",
+      "dataPagamento": "2026-05-04",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "IPVA - Parcela 1/3 (riscado na folha)",
+      "valor": 1145.27,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-002",
+      "data": "2026-05-04",
+      "caminhao": "MSJ6G28",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-04",
+      "dataPagamento": "2026-05-04",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "Seguro - Parcela 1/8",
+      "valor": 171.65,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-003",
+      "data": "2026-05-04",
+      "caminhao": "MIP1H40",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-04",
+      "dataPagamento": "2026-05-04",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "Seguro - Parcela 1/8",
+      "valor": 172.31,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-004",
+      "data": "2026-05-04",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-04",
+      "dataPagamento": "2026-05-04",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "Seguro Pajero - Parcela 1/8",
+      "valor": 225.63,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-013",
+      "data": "2026-05-05",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-05",
+      "dataPagamento": "2026-05-05",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "Salário Fabi - Parcela 1/8",
+      "valor": 4000.0,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-014",
+      "data": "2026-05-05",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-05",
+      "dataPagamento": "2026-05-05",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "Salário Carol - Parcela 1/8",
+      "valor": 330.0,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-015",
+      "data": "2026-05-05",
+      "caminhao": "MII4D55",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-05",
+      "dataPagamento": "2026-05-05",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "Salário Jean Carlos - Parcela 1/8",
+      "valor": 4600.0,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-016",
+      "data": "2026-05-05",
+      "caminhao": "MIP1H40",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-05",
+      "dataPagamento": "2026-05-05",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "Salário Sandy - Parcela 1/8",
+      "valor": 4500.0,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-017",
+      "data": "2026-05-05",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-05",
+      "dataPagamento": "2026-05-05",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "Financiamento Caçamba - Parcela 1/8",
+      "valor": 5000.0,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-018",
+      "data": "2026-05-05",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "TRANS CAMILE",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-05",
+      "dataPagamento": "2026-05-05",
+      "responsavelPagamento": "TRANS CAMILE",
+      "descricao": "TRANS CAMILE - Parcela 1/8",
+      "valor": 480.0,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-027",
+      "data": "2026-05-07",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "TRANS CAMILE",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-07",
+      "dataPagamento": "2026-05-07",
+      "responsavelPagamento": "TRANS CAMILE",
+      "descricao": "Consumo mensal na loja - Parcela 1/8",
+      "valor": 480.0,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-039",
+      "data": "2026-05-13",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-13",
+      "dataPagamento": "2026-05-13",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "Financiamento Bradesco Caminhão - Parcela 1/8",
+      "valor": 6298.83,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-042",
+      "data": "2026-05-15",
+      "caminhao": "MIP1H40",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-15",
+      "dataPagamento": "2026-05-15",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "Sem Parar MIP1H40 - Parcela 1/8",
+      "valor": 947.55,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-043",
+      "data": "2026-05-15",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-15",
+      "dataPagamento": "2026-05-15",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "CONTA TIM CELULAR - Parcela 1/8",
+      "valor": 113.32,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-045",
+      "data": "2026-05-17",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-17",
+      "dataPagamento": "2026-05-17",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "Financiamento Bradesco 2 débito em conta - Parcela 1/8 (riscado na folha)",
+      "valor": 6058.04,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-048",
+      "data": "2026-05-19",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-19",
+      "dataPagamento": "2026-05-19",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "Financiamento SICRED - débito em conta - Parcela 1/8 (riscado na folha)",
+      "valor": 6023.2,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-050",
+      "data": "2026-05-20",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-20",
+      "dataPagamento": "2026-05-20",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "Oficina Daló - Parcela 1/3",
+      "valor": 4059.0,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-051",
+      "data": "2026-05-20",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-20",
+      "dataPagamento": "2026-05-20",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "MEI Dorli - Honorário - Parcela 1/8",
+      "valor": 160.0,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-052",
+      "data": "2026-05-20",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-20",
+      "dataPagamento": "2026-05-20",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "DAS MEI Dorli - Parcela 1/8",
+      "valor": 200.52,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-053",
+      "data": "2026-05-20",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-20",
+      "dataPagamento": "2026-05-20",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "DAS Fabiana Comin - Parcela 1/8",
+      "valor": 200.52,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-054",
+      "data": "2026-05-20",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-20",
+      "dataPagamento": "2026-05-20",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "MEI Fabiana Comin - Honorários - Parcela 1/8",
+      "valor": 160.19,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-055",
+      "data": "2026-05-20",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-20",
+      "dataPagamento": "2026-05-20",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "DAS MEI Alberto Comin - Parcela 1/8",
+      "valor": 200.52,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-056",
+      "data": "2026-05-20",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-20",
+      "dataPagamento": "2026-05-20",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "MEI Alberto Comin - Honorários - Parcela 1/8",
+      "valor": 250.0,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-057",
+      "data": "2026-05-20",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-20",
+      "dataPagamento": "2026-05-20",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "Imposto Renda Alberto Comin - débito em conta bradesco - Parcela 1/8",
+      "valor": 442.75,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-058",
+      "data": "2026-05-20",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-20",
+      "dataPagamento": "2026-05-20",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "Renovadora de Pneus Hoff - Parcela 1/1",
+      "valor": 536.33,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-059",
+      "data": "2026-05-20",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-20",
+      "dataPagamento": "2026-05-20",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "Roni Chaves - Bomba d'água - parcela 1/2 - Parcela 1/1",
+      "valor": 299.0,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-060",
+      "data": "2026-05-20",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-20",
+      "dataPagamento": "2026-05-20",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "Roni Chaves - parcela 1/2 - Bomba Cuíca - Parcela 1/1",
+      "valor": 308.11,
+      "statusPagamento": "Pago"
+    },
+    {
+      "id": "desp-061",
+      "data": "2026-05-20",
+      "caminhao": "TODOS",
+      "tipo": "Despesa",
+      "litros": "",
+      "valorLitro": "",
+      "kmPainel": "",
+      "postoEmpresa": "ATR MINHOCÃO",
+      "formaPagamento": "Pix",
+      "pagamentoPrazoComo": "",
+      "dataVencimento": "2026-05-20",
+      "dataPagamento": "2026-05-20",
+      "responsavelPagamento": "ATR MINHOCÃO",
+      "descricao": "BOEING PNEUS - PARCELA 3/4 - Parcela 1/1",
+      "valor": 1790.0,
+      "statusPagamento": "Pago"
+    }
+  ],
+  "entradasCaixa": [
+    {
+      "id": "ent-001",
+      "data": "2026-05-06",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Frete recebido - Pedido 643974",
+      "origem": "Frete",
+      "valor": 820.0
+    },
+    {
+      "id": "ent-002",
+      "data": "2026-05-06",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Frete recebido - Pedido 643947",
+      "origem": "Frete",
+      "valor": 820.0
+    },
+    {
+      "id": "ent-003",
+      "data": "2026-05-06",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Frete recebido - Pedido 644062",
+      "origem": "Frete",
+      "valor": 820.0
+    },
+    {
+      "id": "ent-004",
+      "data": "2026-05-06",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Frete recebido - Pedido 644021",
+      "origem": "Frete",
+      "valor": 820.0
+    },
+    {
+      "id": "ent-005",
+      "data": "2026-05-08",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Frete recebido - Pedido 644096",
+      "origem": "Frete",
+      "valor": 820.0
+    },
+    {
+      "id": "ent-006",
+      "data": "2026-05-08",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Frete recebido - Pedido 644127",
+      "origem": "Frete",
+      "valor": 820.0
+    },
+    {
+      "id": "ent-007",
+      "data": "2026-05-08",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Frete recebido - Pedido Não informado",
+      "origem": "Frete",
+      "valor": 820.0
+    },
+    {
+      "id": "ent-008",
+      "data": "2026-05-08",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Frete recebido - Pedido Não informado",
+      "origem": "Frete",
+      "valor": 820.0
+    },
+    {
+      "id": "ent-009",
+      "data": "2026-05-13",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Frete recebido - Pedido 644277",
+      "origem": "Frete",
+      "valor": 820.0
+    },
+    {
+      "id": "ent-010",
+      "data": "2026-05-13",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Frete recebido - Pedido 644241",
+      "origem": "Frete",
+      "valor": 820.0
+    },
+    {
+      "id": "ent-011",
+      "data": "2026-05-13",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Frete recebido - Pedido 644348",
+      "origem": "Frete",
+      "valor": 820.0
+    },
+    {
+      "id": "ent-012",
+      "data": "2026-05-13",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Frete recebido - Pedido 644374",
+      "origem": "Frete",
+      "valor": 820.0
+    },
+    {
+      "id": "ent-013",
+      "data": "2026-05-13",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Frete recebido - Pedido 644445",
+      "origem": "Frete",
+      "valor": 820.0
+    },
+    {
+      "id": "ent-014",
+      "data": "2026-05-15",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Frete recebido - Pedido 644417",
+      "origem": "Frete",
+      "valor": 820.0
+    },
+    {
+      "id": "ent-015",
+      "data": "2026-05-15",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Frete recebido - Pedido 644530",
+      "origem": "Frete",
+      "valor": 820.0
+    },
+    {
+      "id": "ent-016",
+      "data": "2026-05-15",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Frete recebido - Pedido 644480",
+      "origem": "Frete",
+      "valor": 820.0
+    },
+    {
+      "id": "ent-017",
+      "data": "2026-05-15",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Frete recebido - Pedido 644592",
+      "origem": "Frete",
+      "valor": 820.0
+    },
+    {
+      "id": "ent-018",
+      "data": "2026-05-15",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Frete recebido - Pedido 644567",
+      "origem": "Frete",
+      "valor": 820.0
+    },
+    {
+      "id": "ent-019",
+      "data": "2026-05-06",
+      "tipo": "Entrada",
+      "cliente": "SEMPRE COM DEUS TRANSPORTES",
+      "caminhao": "MII4D55",
+      "descricao": "Pagamento fretes via cheque - depositados",
+      "origem": "Manual",
+      "valor": 1140.99
+    },
+    {
+      "id": "ent-020",
+      "data": "2026-05-13",
+      "tipo": "Entrada",
+      "cliente": "PORTUGAL LOG",
+      "caminhao": "TODOS",
+      "descricao": "Pagamento referente ao mês de fevereiro - SBM/POLIMIX CRICIÚMA",
+      "origem": "Manual",
+      "valor": 1137.88
+    },
+    {
+      "id": "ent-021",
+      "data": "2026-05-04",
+      "tipo": "Entrada",
+      "cliente": "PORTUGAL LOG",
+      "caminhao": "TODOS",
+      "descricao": "Pagamento Vini referente a frete (mes 3 / senha 31cm mês 2) - item riscado na folha",
+      "origem": "Manual",
+      "valor": 2068.0
+    },
+    {
+      "id": "ent-022",
+      "data": "2026-05-05",
+      "tipo": "Entrada",
+      "cliente": "PORTUGAL LOG",
+      "caminhao": "TODOS",
+      "descricao": "Pagamento Vini referente a frete jazida Ecker fevereiro - item riscado na folha",
+      "origem": "Manual",
+      "valor": 689.55
+    },
+    {
+      "id": "ent-023",
+      "data": "2026-05-07",
+      "tipo": "Entrada",
+      "cliente": "PORTUGAL LOG",
+      "caminhao": "TODOS",
+      "descricao": "Frete recebido (30/04/2026) - Pedido Parcela 1/8 Caminhão Gustavo - item riscado na folha",
+      "origem": "Frete",
+      "valor": 6000.0
+    },
+    {
+      "id": "ent-024",
+      "data": "2026-05-13",
+      "tipo": "Entrada",
+      "cliente": "PORTUGAL LOG",
+      "caminhao": "TODOS",
+      "descricao": "Pagamento Gustavo referente a primeira quinzena março - SMB Maracajá/Polimix Criciúma - item riscado na folha",
+      "origem": "Manual",
+      "valor": 765.87
+    }
+  ],
+  "saidasManuais": [
+    {
+      "id": "sai-001",
+      "data": "2026-05-04",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MII4D55",
+      "descricao": "IPVA - Parcela 1/3 (riscado na folha)",
+      "origem": "Despesa",
+      "valor": 1145.27
+    },
+    {
+      "id": "sai-002",
+      "data": "2026-05-04",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MSJ6G28",
+      "descricao": "Seguro - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 171.65
+    },
+    {
+      "id": "sai-003",
+      "data": "2026-05-04",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MIP1H40",
+      "descricao": "Seguro - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 172.31
+    },
+    {
+      "id": "sai-004",
+      "data": "2026-05-04",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Seguro Pajero - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 225.63
+    },
+    {
+      "id": "sai-005",
+      "data": "2026-05-04",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MSJ6G28",
+      "descricao": "Abastecimento",
+      "origem": "Manual",
+      "valor": 2100.0
+    },
+    {
+      "id": "sai-006",
+      "data": "2026-05-04",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MII4D55",
+      "descricao": "Carlão - quem libera fretes cinzas",
+      "origem": "Manual",
+      "valor": 300.0
+    },
+    {
+      "id": "sai-007",
+      "data": "2026-05-04",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MSJ6G28",
+      "descricao": "Mercocar - peça válvula referente código painel",
+      "origem": "Manual",
+      "valor": 120.0
+    },
+    {
+      "id": "sai-008",
+      "data": "2026-05-04",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Renovação de Pneus Hoff - serviço realizado 08/04/26 - Parcela 1/4",
+      "origem": "Manual",
+      "valor": 683.0
+    },
+    {
+      "id": "sai-009",
+      "data": "2026-05-04",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Mercocar - Parcela única",
+      "origem": "Manual",
+      "valor": 160.0
+    },
+    {
+      "id": "sai-010",
+      "data": "2026-05-04",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MII4D55",
+      "descricao": "Montagem - Borracharia do Titi",
+      "origem": "Manual",
+      "valor": 60.0
+    },
+    {
+      "id": "sai-011",
+      "data": "2026-05-04",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Mercocar - Parcela 1/2",
+      "origem": "Manual",
+      "valor": 290.0
+    },
+    {
+      "id": "sai-012",
+      "data": "2026-05-04",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MSJ6G28",
+      "descricao": "KM painel: 1996527/2",
+      "origem": "Manual",
+      "valor": 2100.0
+    },
+    {
+      "id": "sai-013",
+      "data": "2026-05-05",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Salário Fabi - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 4000.0
+    },
+    {
+      "id": "sai-014",
+      "data": "2026-05-05",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Salário Carol - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 330.0
+    },
+    {
+      "id": "sai-015",
+      "data": "2026-05-05",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MII4D55",
+      "descricao": "Salário Jean Carlos - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 4600.0
+    },
+    {
+      "id": "sai-016",
+      "data": "2026-05-05",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MIP1H40",
+      "descricao": "Salário Sandy - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 4500.0
+    },
+    {
+      "id": "sai-017",
+      "data": "2026-05-05",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Financiamento Caçamba - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 5000.0
+    },
+    {
+      "id": "sai-018",
+      "data": "2026-05-05",
+      "tipo": "Saída",
+      "cliente": "TRANS CAMILE",
+      "caminhao": "TODOS",
+      "descricao": "TRANS CAMILE - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 480.0
+    },
+    {
+      "id": "sai-019",
+      "data": "2026-05-05",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Roni Chaves - Compra dia 05/03/2026",
+      "origem": "Manual",
+      "valor": 500.21
+    },
+    {
+      "id": "sai-020",
+      "data": "2026-05-05",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Roni Chaves - compra do dia 11/02/2026",
+      "origem": "Manual",
+      "valor": 761.24
+    },
+    {
+      "id": "sai-021",
+      "data": "2026-05-05",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Pneus Via São Jorge",
+      "origem": "Manual",
+      "valor": 2000.0
+    },
+    {
+      "id": "sai-022",
+      "data": "2026-05-05",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MII4D55",
+      "descricao": "Abastecimento com carta frete - KM painel 1920963,3",
+      "origem": "Manual",
+      "valor": 1312.35
+    },
+    {
+      "id": "sai-023",
+      "data": "2026-05-06",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MII4D55",
+      "descricao": "Abastecimento com Carta Frete, KM painel: 1921564,8",
+      "origem": "Manual",
+      "valor": 1310.3
+    },
+    {
+      "id": "sai-024",
+      "data": "2026-05-06",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Pedágio para ir até a Jazida Ecker",
+      "origem": "Manual",
+      "valor": 3.0
+    },
+    {
+      "id": "sai-025",
+      "data": "2026-05-06",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Direção",
+      "origem": "Manual",
+      "valor": 16.0
+    },
+    {
+      "id": "sai-026",
+      "data": "2026-05-06",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Abastecimento Pajero",
+      "origem": "Manual",
+      "valor": 206.7
+    },
+    {
+      "id": "sai-027",
+      "data": "2026-05-07",
+      "tipo": "Saída",
+      "cliente": "TRANS CAMILE",
+      "caminhao": "TODOS",
+      "descricao": "Consumo mensal na loja - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 480.0
+    },
+    {
+      "id": "sai-028",
+      "data": "2026-05-07",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MII4D55",
+      "descricao": "Chuveiro",
+      "origem": "Manual",
+      "valor": 30.0
+    },
+    {
+      "id": "sai-029",
+      "data": "2026-05-08",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MII4D55",
+      "descricao": "Abastecimento com carta frete, KM painel: 1921564,8",
+      "origem": "Manual",
+      "valor": 1316.65
+    },
+    {
+      "id": "sai-030",
+      "data": "2026-05-08",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MII4D55",
+      "descricao": "Filtro Racor e Filtro diesel",
+      "origem": "Manual",
+      "valor": 310.0
+    },
+    {
+      "id": "sai-031",
+      "data": "2026-05-10",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MII4D55",
+      "descricao": "Sem Parar",
+      "origem": "Manual",
+      "valor": 1018.57
+    },
+    {
+      "id": "sai-032",
+      "data": "2026-05-11",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Jaqueta para o Alberto",
+      "origem": "Manual",
+      "valor": 142.41
+    },
+    {
+      "id": "sai-033",
+      "data": "2026-05-11",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Cartão de Crédito",
+      "origem": "Manual",
+      "valor": 4051.89
+    },
+    {
+      "id": "sai-034",
+      "data": "2026-05-11",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Pix para Pedro Leandro referente ao óleo",
+      "origem": "Manual",
+      "valor": 200.0
+    },
+    {
+      "id": "sai-035",
+      "data": "2026-05-11",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Comércio de Parafusos - débito",
+      "origem": "Manual",
+      "valor": 48.0
+    },
+    {
+      "id": "sai-036",
+      "data": "2026-05-11",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Abastecimento Pajero",
+      "origem": "Manual",
+      "valor": 402.93
+    },
+    {
+      "id": "sai-037",
+      "data": "2026-05-12",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MSJ6G28",
+      "descricao": "Abastecimento Bradesco - débito",
+      "origem": "Manual",
+      "valor": 2133.14
+    },
+    {
+      "id": "sai-038",
+      "data": "2026-05-12",
+      "tipo": "Saída",
+      "cliente": "CARLÃO - FRETES DA CINZAS ÚMIDAS",
+      "caminhao": "TODOS",
+      "descricao": "-",
+      "origem": "Manual",
+      "valor": 300.0
+    },
+    {
+      "id": "sai-039",
+      "data": "2026-05-13",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Financiamento Bradesco Caminhão - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 6298.83
+    },
+    {
+      "id": "sai-040",
+      "data": "2026-05-13",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MII4D55",
+      "descricao": "Abastecimento Carta Frete, KM painel: 1922682,9",
+      "origem": "Manual",
+      "valor": 1899.01
+    },
+    {
+      "id": "sai-041",
+      "data": "2026-05-13",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MII4D55",
+      "descricao": "Carlão - fretes cinzas úmidas",
+      "origem": "Manual",
+      "valor": 300.0
+    },
+    {
+      "id": "sai-042",
+      "data": "2026-05-15",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MIP1H40",
+      "descricao": "Sem Parar MIP1H40 - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 947.55
+    },
+    {
+      "id": "sai-043",
+      "data": "2026-05-15",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "CONTA TIM CELULAR - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 113.32
+    },
+    {
+      "id": "sai-044",
+      "data": "2026-05-16",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MII4D55",
+      "descricao": "Horas extras Calota trabalhadas na semana",
+      "origem": "Manual",
+      "valor": 500.0
+    },
+    {
+      "id": "sai-045",
+      "data": "2026-05-17",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Financiamento Bradesco 2 débito em conta - Parcela 1/8 (riscado na folha)",
+      "origem": "Despesa",
+      "valor": 6058.04
+    },
+    {
+      "id": "sai-046",
+      "data": "2026-05-17",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MII4D55",
+      "descricao": "Molas Presidente",
+      "origem": "Manual",
+      "valor": 300.16
+    },
+    {
+      "id": "sai-047",
+      "data": "2026-05-18",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Abertura Empresa Lucro Real",
+      "origem": "Manual",
+      "valor": 168.0
+    },
+    {
+      "id": "sai-048",
+      "data": "2026-05-19",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Financiamento SICRED - débito em conta - Parcela 1/8 (riscado na folha)",
+      "origem": "Despesa",
+      "valor": 6023.2
+    },
+    {
+      "id": "sai-049",
+      "data": "2026-05-19",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MII4D55",
+      "descricao": "Med Truck - Serviço realizado 17/05",
+      "origem": "Manual",
+      "valor": 650.0
+    },
+    {
+      "id": "sai-050",
+      "data": "2026-05-20",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Oficina Daló - Parcela 1/3",
+      "origem": "Despesa",
+      "valor": 4059.0
+    },
+    {
+      "id": "sai-051",
+      "data": "2026-05-20",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "MEI Dorli - Honorário - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 160.0
+    },
+    {
+      "id": "sai-052",
+      "data": "2026-05-20",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "DAS MEI Dorli - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 200.52
+    },
+    {
+      "id": "sai-053",
+      "data": "2026-05-20",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "DAS Fabiana Comin - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 200.52
+    },
+    {
+      "id": "sai-054",
+      "data": "2026-05-20",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "MEI Fabiana Comin - Honorários - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 160.19
+    },
+    {
+      "id": "sai-055",
+      "data": "2026-05-20",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "DAS MEI Alberto Comin - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 200.52
+    },
+    {
+      "id": "sai-056",
+      "data": "2026-05-20",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "MEI Alberto Comin - Honorários - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 250.0
+    },
+    {
+      "id": "sai-057",
+      "data": "2026-05-20",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Imposto Renda Alberto Comin - débito em conta bradesco - Parcela 1/8",
+      "origem": "Despesa",
+      "valor": 442.75
+    },
+    {
+      "id": "sai-058",
+      "data": "2026-05-20",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Renovadora de Pneus Hoff - Parcela 1/1",
+      "origem": "Despesa",
+      "valor": 536.33
+    },
+    {
+      "id": "sai-059",
+      "data": "2026-05-20",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Roni Chaves - Bomba d'água - parcela 1/2 - Parcela 1/1",
+      "origem": "Despesa",
+      "valor": 299.0
+    },
+    {
+      "id": "sai-060",
+      "data": "2026-05-20",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "Roni Chaves - parcela 1/2 - Bomba Cuíca - Parcela 1/1",
+      "origem": "Despesa",
+      "valor": 308.11
+    },
+    {
+      "id": "sai-061",
+      "data": "2026-05-20",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "TODOS",
+      "descricao": "BOEING PNEUS - PARCELA 3/4 - Parcela 1/1",
+      "origem": "Despesa",
+      "valor": 1790.0
+    },
+    {
+      "id": "sai-062",
+      "data": "2026-05-20",
+      "tipo": "Saída",
+      "cliente": "ATR MINHOCÃO",
+      "caminhao": "MIP1H40",
+      "descricao": "Lealtino Luiz Sottana - Serviço 22/04/2026",
+      "origem": "Manual",
+      "valor": 280.0
+    }
+  ],
+  "contasReceberFixas": [],
+  "recuperadoDasFolhas": true
+};
+
+const clonarDados = (dados) => JSON.parse(JSON.stringify(dados));
+
+const temDadosOperacionais = (dados) => {
+  if (!dados) return false;
+  return Boolean(
+    (dados.clientes && dados.clientes.length) ||
+    (dados.caminhoes && dados.caminhoes.length) ||
+    (dados.viagens && dados.viagens.length) ||
+    (dados.despesas && dados.despesas.length) ||
+    (dados.entradasCaixa && dados.entradasCaixa.length) ||
+    (dados.saidasManuais && dados.saidasManuais.length)
+  );
 };
 
 const despesaVazia = {
@@ -311,6 +2151,10 @@ export default function App() {
 
     const sessao = localStorage.getItem("atr-minhocao-login");
 
+    if (!temDadosOperacionais(dadosEncontrados)) {
+      dadosEncontrados = clonarDados(DADOS_RECUPERADOS_FOLHAS);
+    }
+
     if (dadosEncontrados) {
       setUsuarios(dadosEncontrados.usuarios || dadosIniciais.usuarios);
       setClientes(dadosEncontrados.clientes || []);
@@ -400,9 +2244,13 @@ export default function App() {
 
   useEffect(() => {
     const dados = { usuarios, clientes, materiais, caminhoes, viagens, despesas, entradasCaixa, saidasManuais, contasReceberFixas };
-    localStorage.setItem(CHAVE_PRINCIPAL, JSON.stringify(dados));
-    localStorage.setItem("atr-minhocao-v13", JSON.stringify(dados));
-    localStorage.setItem("atr-minhocao-v4", JSON.stringify(dados));
+    const serializado = JSON.stringify(dados);
+    localStorage.setItem(CHAVE_PRINCIPAL, serializado);
+    localStorage.setItem("atr-minhocao-v15", serializado);
+    localStorage.setItem("atr-minhocao-v13", serializado);
+    localStorage.setItem("atr-minhocao-v4", serializado);
+    localStorage.setItem("ATR-Minhocao-dados", serializado);
+    localStorage.setItem("ATR-Minhocao-V15", serializado);
   }, [usuarios, clientes, materiais, caminhoes, viagens, despesas, entradasCaixa, saidasManuais, contasReceberFixas]);
 
   const viagensFiltradas = useMemo(() => {
@@ -1412,6 +3260,35 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
+
+
+  const restaurarDadosDasFolhas = () => {
+    const confirmar = window.confirm("Restaurar os dados reconstruídos das folhas impressas? Isso vai substituir os dados atuais do navegador.");
+    if (!confirmar) return;
+
+    const dados = clonarDados(DADOS_RECUPERADOS_FOLHAS);
+    setUsuarios(dados.usuarios || []);
+    setClientes(dados.clientes || []);
+    setMateriais(dados.materiais || []);
+    setCaminhoes(dados.caminhoes || []);
+    setViagens(dados.viagens || []);
+    setDespesas(dados.despesas || []);
+    setEntradasCaixa(dados.entradasCaixa || []);
+    setSaidasManuais(dados.saidasManuais || []);
+    setContasReceberFixas(dados.contasReceberFixas || []);
+
+    const serializado = JSON.stringify(dados);
+    localStorage.setItem(CHAVE_PRINCIPAL, serializado);
+    localStorage.setItem("atr-minhocao-v15", serializado);
+    localStorage.setItem("atr-minhocao-v13", serializado);
+    localStorage.setItem("atr-minhocao-v4", serializado);
+    localStorage.setItem("ATR-Minhocao-dados", serializado);
+    localStorage.setItem("ATR-Minhocao-V15", serializado);
+
+    alert("Dados das folhas restaurados no sistema.");
+    setAba("dashboard");
+  };
+
   const menu = [
     { id: "dashboard", nome: "Dashboard" },
     { id: "clientes", nome: "Clientes/Empresas" },
@@ -1439,6 +3316,9 @@ export default function App() {
               </div>
               <button onClick={exportarBackupDados} className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-3 py-2 text-xs font-bold">
                 Backup
+              </button>
+              <button onClick={restaurarDadosDasFolhas} className="bg-red-600 hover:bg-red-700 rounded-xl px-3 py-2 text-xs font-bold">
+                Restaurar folhas
               </button>
               <button onClick={sair} className="text-red-400"><LogOut /></button>
             </div>
@@ -2128,12 +4008,16 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
   const [tipoFiltro, setTipoFiltro] = React.useState("Todos");
   const [ordenarPor, setOrdenarPor] = React.useState("data-desc");
   const [pesquisa, setPesquisa] = React.useState("");
+  const [dataInicial, setDataInicial] = React.useState("");
+  const [dataFinal, setDataFinal] = React.useState("");
   const porPagina = 10;
 
   const textoPesquisa = pesquisa.trim().toLowerCase();
 
   const fluxoFiltrado = fluxo
     .filter((item) => tipoFiltro === "Todos" || item.tipo === tipoFiltro)
+    .filter((item) => !dataInicial || item.data >= dataInicial)
+    .filter((item) => !dataFinal || item.data <= dataFinal)
     .filter((item) => {
       if (!textoPesquisa) return true;
 
@@ -2186,7 +4070,7 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
   const totalEntradas = fluxoFiltrado.filter((i) => i.tipo === "Entrada").reduce((s, i) => s + numero(i.valor), 0);
   const totalSaidas = fluxoFiltrado.filter((i) => i.tipo === "Saída").reduce((s, i) => s + numero(i.valor), 0);
 
-  const filtrosTexto = `Tipo: ${tipoFiltro} | Ordenação: ${ordenarPor} | Pesquisa: ${pesquisa || "Sem pesquisa"}`;
+  const filtrosTexto = `Tipo: ${tipoFiltro} | Ordenação: ${ordenarPor} | Data inicial: ${dataInicial ? formatarData(dataInicial) : "Sem filtro"} | Data final: ${dataFinal ? formatarData(dataFinal) : "Sem filtro"} | Pesquisa: ${pesquisa || "Sem pesquisa"}`;
 
   const emitirPdfFiltrado = () => {
     const linhas = fluxoFiltrado.map((item) => `
@@ -2410,7 +4294,7 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
         </div>
       </div>
 
-      <div className="grid md:grid-cols-5 gap-3 mb-4">
+      <div className="grid md:grid-cols-7 gap-3 mb-4">
         <Select
           label="Filtrar tipo"
           value={tipoFiltro}
@@ -2422,6 +4306,18 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
           value={ordenarPor}
           onChange={(v) => { setOrdenarPor(v); setPagina(1); }}
           options={["data-desc", "data-asc", "empresa-asc", "empresa-desc", "valor-desc", "valor-asc"]}
+        />
+        <Input
+          label="Data inicial"
+          type="date"
+          value={dataInicial}
+          onChange={(v) => { setDataInicial(v); setPagina(1); }}
+        />
+        <Input
+          label="Data final"
+          type="date"
+          value={dataFinal}
+          onChange={(v) => { setDataFinal(v); setPagina(1); }}
         />
         <Input
           label="Pesquisar"
@@ -2436,6 +4332,15 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
           <p className="text-xs text-zinc-500">Saídas filtradas</p>
           <p className="font-black text-red-400">{moeda(totalSaidas)}</p>
         </div>
+      </div>
+
+      <div className="mb-4">
+        <button
+          onClick={() => { setDataInicial(""); setDataFinal(""); setPesquisa(""); setTipoFiltro("Todos"); setPagina(1); }}
+          className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-4 py-2 text-sm font-bold"
+        >
+          Limpar filtros do fluxo
+        </button>
       </div>
 
       <div className="grid gap-3">
