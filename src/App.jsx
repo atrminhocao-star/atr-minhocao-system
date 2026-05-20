@@ -2128,12 +2128,16 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
   const [tipoFiltro, setTipoFiltro] = React.useState("Todos");
   const [ordenarPor, setOrdenarPor] = React.useState("data-desc");
   const [pesquisa, setPesquisa] = React.useState("");
+  const [dataInicial, setDataInicial] = React.useState("");
+  const [dataFinal, setDataFinal] = React.useState("");
   const porPagina = 10;
 
   const textoPesquisa = pesquisa.trim().toLowerCase();
 
   const fluxoFiltrado = fluxo
     .filter((item) => tipoFiltro === "Todos" || item.tipo === tipoFiltro)
+    .filter((item) => !dataInicial || item.data >= dataInicial)
+    .filter((item) => !dataFinal || item.data <= dataFinal)
     .filter((item) => {
       if (!textoPesquisa) return true;
 
@@ -2186,7 +2190,7 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
   const totalEntradas = fluxoFiltrado.filter((i) => i.tipo === "Entrada").reduce((s, i) => s + numero(i.valor), 0);
   const totalSaidas = fluxoFiltrado.filter((i) => i.tipo === "Saída").reduce((s, i) => s + numero(i.valor), 0);
 
-  const filtrosTexto = `Tipo: ${tipoFiltro} | Ordenação: ${ordenarPor} | Pesquisa: ${pesquisa || "Sem pesquisa"}`;
+  const filtrosTexto = `Tipo: ${tipoFiltro} | Ordenação: ${ordenarPor} | Data inicial: ${dataInicial ? formatarData(dataInicial) : "Sem filtro"} | Data final: ${dataFinal ? formatarData(dataFinal) : "Sem filtro"} | Pesquisa: ${pesquisa || "Sem pesquisa"}`;
 
   const emitirPdfFiltrado = () => {
     const linhas = fluxoFiltrado.map((item) => `
@@ -2410,7 +2414,7 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
         </div>
       </div>
 
-      <div className="grid md:grid-cols-5 gap-3 mb-4">
+      <div className="grid md:grid-cols-7 gap-3 mb-4">
         <Select
           label="Filtrar tipo"
           value={tipoFiltro}
@@ -2422,6 +2426,18 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
           value={ordenarPor}
           onChange={(v) => { setOrdenarPor(v); setPagina(1); }}
           options={["data-desc", "data-asc", "empresa-asc", "empresa-desc", "valor-desc", "valor-asc"]}
+        />
+        <Input
+          label="Data inicial"
+          type="date"
+          value={dataInicial}
+          onChange={(v) => { setDataInicial(v); setPagina(1); }}
+        />
+        <Input
+          label="Data final"
+          type="date"
+          value={dataFinal}
+          onChange={(v) => { setDataFinal(v); setPagina(1); }}
         />
         <Input
           label="Pesquisar"
@@ -2436,6 +2452,15 @@ function ListaFluxoCaixa({ fluxo, apagarEntrada, apagarSaida, editarEntrada, edi
           <p className="text-xs text-zinc-500">Saídas filtradas</p>
           <p className="font-black text-red-400">{moeda(totalSaidas)}</p>
         </div>
+      </div>
+
+      <div className="mb-4">
+        <button
+          onClick={() => { setDataInicial(""); setDataFinal(""); setPesquisa(""); setTipoFiltro("Todos"); setPagina(1); }}
+          className="bg-zinc-800 hover:bg-zinc-700 rounded-xl px-4 py-2 text-sm font-bold"
+        >
+          Limpar filtros do fluxo
+        </button>
       </div>
 
       <div className="grid gap-3">
